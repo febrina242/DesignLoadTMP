@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Load — PT Tozen Mechanical Product</title>
+    <!-- Firebase Library -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto 20px auto;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .header h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .btn-admin { background-color: #6c757d; color: white; }
+        .btn-admin:hover { background-color: #5a6268; }
+        .btn-submit { background-color: #1b8a43; color: white; width: 100%; margin-top: 10px; }
+        .btn-submit:hover { background-color: #146c33; }
+        .btn-excel { background-color: #1d723a; color: white; display: none; margin-left: 5px; }
+        .btn-excel:hover { background-color: #155229; }
+        .btn-backup { background-color: #4a5568; color: white; display: none; margin-left: 5px; }
+        .btn-backup:hover { background-color: #2d3748; }
+        .btn-action { padding: 4px 8px; font-size: 11px; background: #e2e8f0; border-radius: 3px; color: #4a5568; border: none; cursor: pointer; }
+        .btn-action:hover { background: #cbd5e0; }
+
+        .admin-panel {
+            max-width: 1400px;
+            margin: 0 auto 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: none;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        label { font-size: 12px; font-weight: bold; color: #4a5568; display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; }
+
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .column {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 250px;
+        }
+        .column h3 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #cbd5e0;
+            color: #4a5568;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+        }
+        .count-badge { background: #cbd5e0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        
+        .list-section {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #edf2f7;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .list-section h3 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            color: #2d3748;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+            border-left: 5px solid #ccc;
+        }
+        .card.divisi-md { border-left-color: #3182ce; }
+        .card.divisi-rd { border-left-color: #dd6b20; }
+        .card.divisi-cd { border-left-color: #319795; }
+        
+        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; word-break: break-all; }
+        .card-meta { font-size: 11px; color: #718096; margin-bottom: 4px; }
+        .card-badge { display: inline-block; padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px; color: white; margin-bottom: 8px; }
+        .badge-md { background-color: #3182ce; }
+        .badge-rd { background-color: #dd6b20; }
+        .badge-cd { background-color: #319795; }
+        .card-actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px; border-top: 1px solid #edf2f7; padding-top: 8px; flex-wrap: wrap; }
+        
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        th { background-color: #f7fafc; color: #4a5568; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        
+        .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; }
+        .status-q { background: #e2e8f0; color: #4a5568; }
+        .status-l { background: #feebc8; color: #c05621; }
+        .status-r { background: #ebf8ff; color: #2b6cb0; }
+        .status-d { background: #c6f6d5; color: #22543d; }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>
+            <h1>Design Load — PT Tozen Mechanical Product</h1>
+            <small style="color: #718096;">Track & Monitor Design Requests Across CD, MD, & RD</small>
+        </div>
+        <div>
+            <button class="btn btn-admin" id="btnEditWeb" onclick="bukaEditorWeb()" style="display:none; margin-right:6px;">⚙️ Edit Web</button>
+            <button class="btn btn-admin" id="btnAdminMode" onclick="aktifkanAdmin()">Login Admin</button>
+        </div>
+    </div>
+
+    <!-- FORM INPUT -->
+    <div class="admin-panel" id="adminPanel">
+        <h3 style="margin-top:0; color:#2b6cb0;">Drawing Request Entry</h3>
+        <div class="form-grid">
+            <div>
+                <label>Nama Project / Gambar</label>
+                <input type="text" id="projName" placeholder="Contoh: Banner Promo Gajian">
+            </div>
+            <div>
+                <label>Asal Divisi</label>
+                <select id="projDivisi">
+                    <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
+                    <option value="Rubber Division (RD)">Rubber Division (RD)</option>
+                    <option value="Casting Division (CD)">Casting Division (CD)</option>
+                </select>
+            </div>
+            <div>
+                <label>Tipe Permintaan</label>
+                <select id="projRequestType">
+                    <option value="3D Only">3D Only</option>
+                    <option value="2D Only">2D Only</option>
+                    <option value="3D + 2D">3D + 2D</option>
+                </select>
+            </div>
+            <div>
+                <label>Batas Waktu (Deadline)</label>
+                <input type="datetime-local" id="projDeadline">
+            </div>
+        </div>
+        <button class="btn btn-submit" onclick="tambahProject()">📥 Masukkan Data ke Antrean</button>
+    </div>
+
+    <!-- ADMIN EDITOR WEB -->
+    <div class="admin-panel" id="webEditorPanel" style="display:none;">
+        <h3 style="margin-top:0; color:#2b6cb0;">⚙ Edit Tampilan Web</h3>
+        <div class="form-grid">
+            <div><label>Judul Dashboard</label><input type="text" id="webTitle"></div>
+            <div><label>Subjudul Dashboard</label><input type="text" id="webSubtitle"></div>
+            <div><label>Judul Form Input</label><input type="text" id="webFormTitle"></div>
+            <div><label>Judul Daftar Riwayat</label><input type="text" id="webHistoryTitle"></div>
+            <div><label>Nama Status 1</label><input type="text" id="webQueueTitle"></div>
+            <div><label>Nama Status 2</label><input type="text" id="webLoadingTitle"></div>
+            <div><label>Nama Status 3</label><input type="text" id="webReviewTitle"></div>
+            <div><label>Nama Status 4</label><input type="text" id="webDoneTitle"></div>
+        </div>
+        <button class="btn btn-submit" onclick="simpanPengaturanWeb()">💾 Simpan Perubahan Tampilan</button>
+    </div>
+
+    <div class="main-layout">
+        <!-- TABEL RIWAYAT -->
+        <div class="list-section">
+            <h3>
+                <span>📋 Master Log & History List</span>
+                <div>
+                    <button class="btn btn-backup" id="btnBackupJSON" onclick="backupDataJSON()">💾 Backup JSON</button>
+                    <button class="btn btn-backup" id="btnRestoreJSON" onclick="pilihFileRestore()">📂 Restore JSON</button>
+                    <button class="btn btn-excel" id="btnExportExcel" onclick="eksporKeExcel()">📥 Ekspor Semua ke Excel</button>
+                </div>
+            </h3>
+            <div class="table-container">
+                <table id="tabelRiwayatUtama">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">No</th>
+                            <th>Nama Project / Gambar</th>
+                            <th>Divisi Peminta</th>
+                            <th>Waktu Masuk Sistem</th>
+                            <th>Batas Deadline</th>
+                            <th>Tipe Permintaan</th>
+                            <th>Status Proses</th>
+                            <th id="th-aksi" style="display: none; width: 180px;">Aksi Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BOARD KANBAN STATUS -->
+        <div class="board">
+            <div class="column">
+                <h3>📥 Incoming <span class="count-badge" id="count-q">0</span></h3>
+                <div id="col-queue"></div>
+            </div>
+            <div class="column">
+                <h3>⏳ In Progress <span class="count-badge" id="count-l">0</span></h3>
+                <div id="col-loading"></div>
+            </div>
+            <div class="column">
+                <h3>🔍 Under Review <span class="count-badge" id="count-r">0</span></h3>
+                <div id="col-review"></div>
+            </div>
+            <div class="column">
+                <h3>✅ Approved (Done) <span class="count-badge" id="count-d">0</span></h3>
+                <div id="col-done"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyB8pvM7zLAWHepWNxCVtXOUFkPb4ClTwC0",
+  authDomain: "loading-design-tmp.firebaseapp.com",
+  databaseURL: "https://loading-design-tmp-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "loading-design-tmp",
+  storageBucket: "loading-design-tmp.firebasestorage.app",
+  messagingSenderId: "912988123915",
+  appId: "1:912988123915:web:4c1bf831c43f765adfe80e",
+  measurementId: "G-8SKDE34X7L"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref('antrean_proyek');
+    const auth = firebase.auth();
+
+    let projects = [];
+    let isAdmin = false;
+
+    const LOCAL_STORAGE_KEY = 'papan_antrean_local_cache_v2';
+    const WEB_SETTINGS_KEY = 'papan_antrean_web_settings_v1';
+    const settingsRef = firebase.database().ref('dashboard_settings');
+
+    const DEFAULT_WEB_SETTINGS = {
+        title: 'Design Load — PT Tozen Mechanical Product',
+        subtitle: 'Track & Monitor Design Requests Across CD, MD, & RD',
+        formTitle: 'Drawing Request Entry',
+        historyTitle: '📋 Master Log & History List',
+        queueTitle: '📥 Incoming',
+        loadingTitle: '⏳ In Progress',
+        reviewTitle: '🔍 Under Review',
+        doneTitle: '✅ Approved (Done)'
+    };
+    let webSettings = { ...DEFAULT_WEB_SETTINGS };
+
+    auth.onAuthStateChanged((user) => {
+        isAdmin = !!user;
+        setAdminUI();
+    });
+
+    function escapeHTML(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function simpanCacheLokal() {
+        try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projects)); } catch (e) {}
+    }
+
+    function muatCacheLokal() {
+        try {
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (!raw) return;
+            const cached = JSON.parse(raw);
+            if (Array.isArray(cached)) {
+                projects = cached;
+                projects.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+                renderBoard();
+            }
+        } catch (e) {}
+    }
+
+    function setAdminUI() {
+        document.getElementById('adminPanel').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('btnExportExcel').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('btnBackupJSON').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('btnRestoreJSON').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('th-aksi').style.display = isAdmin ? 'table-cell' : 'none';
+        document.getElementById('btnAdminMode').innerText = isAdmin ? 'Logout Admin' : 'Login Admin';
+        document.getElementById('btnEditWeb').style.display = isAdmin ? 'inline-block' : 'none';
+        if (!isAdmin) document.getElementById('webEditorPanel').style.display = 'none';
+        renderBoard();
+    }
+
+    function applyWebSettings() {
+        document.querySelector('.header h1').innerText = webSettings.title;
+        document.querySelector('.header small').innerText = webSettings.subtitle;
+        document.querySelector('#adminPanel h3').innerText = webSettings.formTitle;
+        document.querySelector('.list-section h3 span').innerText = webSettings.historyTitle;
+        document.querySelector('#col-queue').previousElementSibling.firstChild.textContent = webSettings.queueTitle + ' ';
+        document.querySelector('#col-loading').previousElementSibling.firstChild.textContent = webSettings.loadingTitle + ' ';
+        document.querySelector('#col-review').previousElementSibling.firstChild.textContent = webSettings.reviewTitle + ' ';
+        document.querySelector('#col-done').previousElementSibling.firstChild.textContent = webSettings.doneTitle + ' ';
+    }
+
+    function loadWebSettings() {
+        try {
+            const raw = localStorage.getItem(WEB_SETTINGS_KEY);
+            if (raw) webSettings = { ...DEFAULT_WEB_SETTINGS, ...JSON.parse(raw) };
+        } catch (e) {}
+        applyWebSettings();
+    }
+
+    function fillWebEditor() {
+        document.getElementById('webTitle').value = webSettings.title;
+        document.getElementById('webSubtitle').value = webSettings.subtitle;
+        document.getElementById('webFormTitle').value = webSettings.formTitle;
+        document.getElementById('webHistoryTitle').value = webSettings.historyTitle;
+        document.getElementById('webQueueTitle').value = webSettings.queueTitle;
+        document.getElementById('webLoadingTitle').value = webSettings.loadingTitle;
+        document.getElementById('webReviewTitle').value = webSettings.reviewTitle;
+        document.getElementById('webDoneTitle').value = webSettings.doneTitle;
+    }
+
+    function bukaEditorWeb() {
+        if (!isAdmin) return;
+        const panel = document.getElementById('webEditorPanel');
+        const willOpen = panel.style.display === 'none' || panel.style.display === '';
+        panel.style.display = willOpen ? 'block' : 'none';
+        if (willOpen) fillWebEditor();
+    }
+
+    async function simpanPengaturanWeb() {
+        if (!isAdmin) return;
+        webSettings = {
+            title: document.getElementById('webTitle').value.trim() || DEFAULT_WEB_SETTINGS.title,
+            subtitle: document.getElementById('webSubtitle').value.trim() || DEFAULT_WEB_SETTINGS.subtitle,
+            formTitle: document.getElementById('webFormTitle').value.trim() || DEFAULT_WEB_SETTINGS.formTitle,
+            historyTitle: document.getElementById('webHistoryTitle').value.trim() || DEFAULT_WEB_SETTINGS.historyTitle,
+            queueTitle: document.getElementById('webQueueTitle').value.trim() || DEFAULT_WEB_SETTINGS.queueTitle,
+            loadingTitle: document.getElementById('webLoadingTitle').value.trim() || DEFAULT_WEB_SETTINGS.loadingTitle,
+            reviewTitle: document.getElementById('webReviewTitle').value.trim() || DEFAULT_WEB_SETTINGS.reviewTitle,
+            doneTitle: document.getElementById('webDoneTitle').value.trim() || DEFAULT_WEB_SETTINGS.doneTitle
+        };
+        localStorage.setItem(WEB_SETTINGS_KEY, JSON.stringify(webSettings));
+        applyWebSettings();
+        try {
+            await settingsRef.set(webSettings);
+            alert('Tampilan web berhasil disimpan.');
+        } catch (error) {
+            alert('Tampilan web disimpan lokal.');
+        }
+    }
+
+    loadWebSettings();
+
+    settingsRef.on('value', (snapshot) => {
+        const cloudSettings = snapshot.val();
+        if (cloudSettings && typeof cloudSettings === 'object') {
+            webSettings = { ...DEFAULT_WEB_SETTINGS, ...cloudSettings };
+            localStorage.setItem(WEB_SETTINGS_KEY, JSON.stringify(webSettings));
+            applyWebSettings();
+        }
+    });
+
+    muatCacheLokal();
+
+    dbRef.on('value', (snapshot) => {
+        const cloudProjects = [];
+        snapshot.forEach((childSnapshot) => {
+            const raw = childSnapshot.val();
+            if (raw) cloudProjects.push({ ...raw, fbKey: childSnapshot.key, _localOnly: false });
+        });
+        cloudProjects.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+        projects = cloudProjects;
+        simpanCacheLokal();
+        renderBoard();
+    });
+
+    async function aktifkanAdmin() {
+        if (isAdmin) {
+            await auth.signOut();
+            alert("Logout berhasil.");
+            return;
+        }
+        const email = prompt("Masukkan Email Owner/Admin:");
+        if (!email) return;
+        const password = prompt("Masukkan Password:");
+        if (!password) return;
+
+        try {
+            await auth.signInWithEmailAndPassword(email.trim(), password);
+            alert("Login Admin Berhasil!");
+        } catch (error) {
+            alert("Login gagal: " + error.message);
+        }
+    }
+
+    async function tambahProject() {
+        if (!isAdmin) return;
+        const nameEl = document.getElementById('projName');
+        const name = nameEl.value.trim();
+        const divisi = document.getElementById('projDivisi').value;
+        const requestType = document.getElementById('projRequestType').value;
+        const deadline = document.getElementById('projDeadline').value;
+
+        if (!name) { alert("Nama Project kosong!"); return; }
+
+        const waktuSekarang = new Date();
+        const stringWaktu = waktuSekarang.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + waktuSekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const formatDeadline = deadline ? new Date(deadline).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+        const newProject = {
+            id: Date.now() + Math.random(),
+            name: name,
+            divisi: divisi,
+            requestType: requestType,
+            waktuMasuk: stringWaktu,
+            deadline: formatDeadline,
+            status: 'queue',
+            _localOnly: true,
+            fbKey: 'local_' + Date.now()
+        };
+
+        projects.push(newProject);
+        simpanCacheLokal();
+        renderBoard();
+
+        nameEl.value = '';
+        document.getElementById('projDeadline').value = '';
+
+        try {
+            const cloudData = { ...newProject };
+            delete cloudData._localOnly;
+            delete cloudData.fbKey;
+            await dbRef.push(cloudData);
+        } catch (error) {
+            alert("Tersimpan secara lokal.");
+        }
+    }
+
+    async function gantiStatus(fbKey, statusBaru) {
+        if (!isAdmin) return;
+        const project = projects.find(p => p.fbKey === fbKey);
+        if (!project) return;
+        project.status = statusBaru;
+        simpanCacheLokal();
+        renderBoard();
+        if (!String(fbKey).startsWith('local_')) {
+            await firebase.database().ref('antrean_proyek/' + fbKey).update({ status: statusBaru });
+        }
+    }
+
+    async function editWaktuMasuk(fbKey) {
+        if (!isAdmin) return;
+        const project = projects.find(p => p.fbKey === fbKey);
+        if (!project) return;
+        const inputWaktuBaru = prompt("Edit Waktu Masuk Sistem:", project.waktuMasuk || '');
+        if (!inputWaktuBaru) return;
+        project.waktuMasuk = inputWaktuBaru.trim();
+        simpanCacheLokal();
+        renderBoard();
+        if (!String(fbKey).startsWith('local_')) {
+            await firebase.database().ref('antrean_proyek/' + fbKey).update({ waktuMasuk: project.waktuMasuk });
+        }
+    }
+
+    async function editProject(fbKey) {
+        if (!isAdmin) return;
+        const project = projects.find(p => p.fbKey === fbKey);
+        if (!project) return;
+
+        const newName = prompt("Nama Project / Gambar:", project.name || '');
+        if (!newName) return;
+
+        const divisiChoice = prompt(
+            "Pilih Divisi Peminta:\n1. Mechanical Division (MD)\n2. Rubber Division (RD)\n3. Casting Division (CD)",
+            project.divisi.includes('Rubber') ? '2' : (project.divisi.includes('Casting') ? '3' : '1')
+        );
+        const divisiMap = { '1': 'Mechanical Division (MD)', '2': 'Rubber Division (RD)', '3': 'Casting Division (CD)' };
+        if (!divisiMap[divisiChoice]) return;
+
+        project.name = newName.trim();
+        project.divisi = divisiMap[divisiChoice];
+        simpanCacheLokal();
+        renderBoard();
+
+        if (!String(fbKey).startsWith('local_')) {
+            await firebase.database().ref('antrean_proyek/' + fbKey).update({ name: project.name, divisi: project.divisi });
+        }
+    }
+
+    async function hapusProject(fbKey) {
+        if (!isAdmin) return;
+        if (confirm("Hapus project ini?")) {
+            projects = projects.filter(p => p.fbKey !== fbKey);
+            simpanCacheLokal();
+            renderBoard();
+            if (!String(fbKey).startsWith('local_')) {
+                await firebase.database().ref('antrean_proyek/' + fbKey).remove();
+            }
+        }
+    }
+
+    function renderBoard() {
+        const colQ = document.getElementById('col-queue');
+        const colL = document.getElementById('col-loading');
+        const colR = document.getElementById('col-review');
+        const colD = document.getElementById('col-done');
+        const tableBody = document.getElementById('tableHistoryBody');
+
+        colQ.innerHTML = ''; colL.innerHTML = ''; colR.innerHTML = ''; colD.innerHTML = ''; tableBody.innerHTML = '';
+        let cQ = 0, cL = 0, cR = 0, cD = 0;
+
+        projects.forEach((p, index) => {
+            let kelasDivisi = 'divisi-md';
+            let labelBadge = 'badge-md';
+            if (p.divisi.includes('Rubber')) { kelasDivisi = 'divisi-rd'; labelBadge = 'badge-rd'; }
+            else if (p.divisi.includes('Casting')) { kelasDivisi = 'divisi-cd'; labelBadge = 'badge-cd'; }
+
+            let tombolAksi = '';
+            if (isAdmin) {
+                let nav = '';
+                if (p.status === 'queue') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'loading')">⏩ In Progress</button>`;
+                else if (p.status === 'loading') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'queue')">⏪ Queue</button><button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'review')">⏩ Review</button>`;
+                else if (p.status === 'review') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'loading')">⏪ Edit</button><button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'done')">⏩ Done</button>`;
+                else if (p.status === 'done') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'review')">⏪ Review</button>`;
+
+                tombolAksi = `<div class="card-actions"><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit</button><button class="btn-action" style="background:#eBF8FF; color:#2B6CB0;" onclick="editWaktuMasuk('${escapeHTML(p.fbKey)}')">🕒 Jam Masuk</button><button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Hapus</button>${nav}</div>`;
+            }
+
+            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 Masuk: <strong>${escapeHTML(p.waktuMasuk)}</strong></div><div class="card-meta">🚨 Batas: <strong>${escapeHTML(p.deadline)}</strong></div><div class="card-meta">🧩 Permintaan: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${tombolAksi}</div>`;
+
+            if (p.status === 'queue') { colQ.innerHTML += HTMLKartu; cQ++; }
+            if (p.status === 'loading') { colL.innerHTML += HTMLKartu; cL++; }
+            if (p.status === 'review') { colR.innerHTML += HTMLKartu; cR++; }
+            if (p.status === 'done') { colD.innerHTML += HTMLKartu; cD++; }
+
+            const statusClass = p.status === 'queue' ? 'q' : (p.status === 'loading' ? 'l' : (p.status === 'review' ? 'r' : 'd'));
+            const statusText = p.status === 'queue' ? '📥 Incoming' : (p.status === 'loading' ? '⏳ In Progress' : (p.status === 'review' ? '🔍 Under Review' : '✅ Done'));
+            const badgeStatus = `<span class="status-pill status-${statusClass}">${statusText}</span>`;
+
+            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(p.waktuMasuk)}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(p.deadline)}</td><td>${escapeHTML(p.requestType || '-')}</td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit</button> <button class="btn-action" style="background:#eBF8FF; color:#2B6CB0;" onclick="editWaktuMasuk('${escapeHTML(p.fbKey)}')">🕒 Jam Masuk</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Hapus</button></td>` : ''}</tr>`;
+        });
+
+        document.getElementById('count-q').innerText = cQ;
+        document.getElementById('count-l').innerText = cL;
+        document.getElementById('count-r').innerText = cR;
+        document.getElementById('count-d').innerText = cD;
+    }
+</script>
+</body>
+</html>
