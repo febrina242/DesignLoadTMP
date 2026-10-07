@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,9 +10,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
         :root {
-            --bg-color: #f4f6f9;
+            --bg-color: #edf4fc;
             --card-bg: #ffffff;
-            --text-color: #333333;
+            --text-color: #172033;
+            --blue-900: #12345a;
+            --blue-800: #174a7e;
+            --blue-700: #1f639f;
+            --blue-600: #2878b8;
+            --blue-100: #e5f1fc;
+            --blue-050: #f4f8fd;
+            --border-color: #d5e2f0;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,12 +34,19 @@
             align-items: center;
             max-width: 1400px;
             margin: 0 auto 20px auto;
-            background: white;
+            background: linear-gradient(110deg, #ffffff 0%, #f4f8fd 100%);
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--blue-800);
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(18,52,90,0.09);
         }
-        .header h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .header-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .company-logo { width: 5cm; height: 2cm; object-fit: contain; flex: 0 0 auto; }
+        .company-logo[hidden] { display: none; }
+        .logo-preview { width: 5cm; height: 2cm; object-fit: contain; padding: 5px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; }
+        .header h1 { margin: 0; font-size: 24px; color: var(--blue-900); }
+        .header small { color: #53657c !important; }
         
         .btn {
             padding: 10px 15px;
@@ -43,24 +57,25 @@
             font-size: 14px;
             transition: 0.2s;
         }
-        .btn-admin { background-color: #6c757d; color: white; }
-        .btn-admin:hover { background-color: #5a6268; }
-        .btn-submit { background-color: #1b8a43; color: white; width: 100%; margin-top: 10px; }
-        .btn-submit:hover { background-color: #146c33; }
+        .btn-admin { background-color: var(--blue-800); color: white; }
+        .btn-admin:hover { background-color: var(--blue-900); }
+        .btn-submit { background-color: var(--blue-700); color: white; width: 100%; margin-top: 10px; }
+        .btn-submit:hover { background-color: var(--blue-900); }
         .btn-excel { background-color: #1d723a; color: white; display: none; margin-left: 5px; }
         .btn-excel:hover { background-color: #155229; }
-        .btn-backup { background-color: #4a5568; color: white; display: none; margin-left: 5px; }
-        .btn-backup:hover { background-color: #2d3748; }
-        .btn-action { padding: 4px 8px; font-size: 11px; background: #e2e8f0; border-radius: 3px; color: #4a5568; border: none; cursor: pointer; }
-        .btn-action:hover { background: #cbd5e0; }
+        .btn-backup { background-color: #364b63; color: white; display: none; margin-left: 5px; }
+        .btn-backup:hover { background-color: #20344c; }
+        .btn-action { padding: 4px 8px; font-size: 11px; background: var(--blue-100); border-radius: 4px; color: var(--blue-900); border: 1px solid #c8dced; cursor: pointer; }
+        .btn-action:hover { background: #d3e8fa; }
 
         .admin-panel {
             max-width: 1400px;
             margin: 0 auto 20px auto;
-            background: white;
+            background: var(--card-bg);
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 5px 16px rgba(18,52,90,0.07);
             display: none;
         }
         .form-grid {
@@ -69,7 +84,13 @@
             gap: 15px;
         }
         label { font-size: 12px; font-weight: bold; color: #4a5568; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #c2d2e3; border-radius: 5px; box-sizing: border-box; color: var(--text-color); background: #fff; }
+        input:focus, select:focus, textarea:focus { outline: 2px solid #8ec5f2; border-color: var(--blue-600); }
+        textarea { width: 100%; min-height: 80px; padding: 8px; border: 1px solid #c2d2e3; border-radius: 5px; box-sizing: border-box; font: inherit; resize: vertical; }
+        dialog { width: min(700px, calc(100% - 40px)); max-height: 90vh; overflow-y: auto; border: none; border-radius: 8px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        dialog::backdrop { background: rgba(0,0,0,0.45); }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
+        .logo-editor { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
         .main-layout {
             display: flex;
@@ -85,34 +106,36 @@
             gap: 20px;
         }
         .column {
-            background: #edf2f7;
+            background: linear-gradient(180deg, #e4effa 0%, #f1f6fc 100%);
             padding: 15px;
-            border-radius: 8px;
+            border: 1px solid #d2e1f0;
+            border-radius: 10px;
             min-height: 250px;
         }
         .column h3 {
             margin-top: 0;
             padding-bottom: 10px;
-            border-bottom: 2px solid #cbd5e0;
-            color: #4a5568;
+            border-bottom: 2px solid #b8cde2;
+            color: var(--blue-900);
             display: flex;
             justify-content: space-between;
             font-size: 16px;
         }
-        .count-badge { background: #cbd5e0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .count-badge { background: #d4e7f8; color: var(--blue-900); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         
         .list-section {
             background: #ffffff;
             padding: 20px;
-            border-radius: 8px;
-            border: 2px solid #edf2f7;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--blue-700);
+            border-radius: 10px;
+            box-shadow: 0 7px 20px rgba(18,52,90,0.06);
         }
         .list-section h3 {
             margin-top: 0;
             padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-            color: #2d3748;
+            border-bottom: 2px solid #d5e2f0;
+            color: var(--blue-900);
             font-size: 18px;
             display: flex;
             justify-content: space-between;
@@ -120,50 +143,99 @@
         }
         
         .card {
-            background: white;
+            background: var(--card-bg);
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 3px 10px rgba(18,52,90,0.08);
             position: relative;
-            border-left: 5px solid #ccc;
+            border-left: 5px solid var(--blue-700);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
-        .card.divisi-md { border-left-color: #3182ce; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(18,52,90,0.12); }
+        .card.divisi-md { border-left-color: #2878b8; }
         .card.divisi-rd { border-left-color: #dd6b20; }
         .card.divisi-cd { border-left-color: #319795; }
         
-        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; word-break: break-all; }
+        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; word-break: break-all; color: var(--blue-900); }
         .card-meta { font-size: 11px; color: #718096; margin-bottom: 4px; }
+        .notes-content {
+            display: block;
+            max-height: 80px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            scrollbar-width: thin;
+            scrollbar-color: #718096 #edf2f7;
+        }
+        .notes-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .notes-content::-webkit-scrollbar-track {
+            background: #edf2f7;
+            border-radius: 4px;
+        }
+        .notes-content::-webkit-scrollbar-thumb {
+            background: #718096;
+            border-radius: 4px;
+        }
+        td .notes-content {
+            max-width: 240px;
+            max-height: 90px;
+            padding: 4px 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            overflow-y: scroll;
+        }
+        .progress-notes-list { display: grid; gap: 6px; }
+        .progress-note { padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+        .progress-note:last-child { padding-bottom: 0; border-bottom: 0; }
+        .progress-note-date { display: block; color: #4a5568; font-size: 10px; font-weight: bold; margin-bottom: 2px; }
+        .total-project-count { display: inline-block; margin-left: 8px; padding: 4px 9px; border-radius: 12px; background: var(--blue-100); color: var(--blue-900); font-size: 12px; font-weight: bold; vertical-align: middle; }
         .card-badge { display: inline-block; padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px; color: white; margin-bottom: 8px; }
         .badge-md { background-color: #3182ce; }
         .badge-rd { background-color: #dd6b20; }
         .badge-cd { background-color: #319795; }
         .card-actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px; border-top: 1px solid #edf2f7; padding-top: 8px; flex-wrap: wrap; }
         
-        .table-container { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+        .table-container { overflow: auto; margin-top: 10px; }
+        .table-container thead th { position: sticky; top: 0; z-index: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 950px; }
         th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
-        th { background-color: #f7fafc; color: #4a5568; }
-        tr:nth-child(even) { background-color: #f8fafc; }
+        th { background-color: var(--blue-900); color: #ffffff; }
+        tr:nth-child(even) { background-color: var(--blue-050); }
         
         .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; }
         .status-q { background: #e2e8f0; color: #4a5568; }
         .status-l { background: #feebc8; color: #c05621; }
         .status-r { background: #ebf8ff; color: #2b6cb0; }
         .status-d { background: #c6f6d5; color: #22543d; }
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .header { align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px; }
+            .header-brand { gap: 10px; }
+            .company-logo { width: 5cm; height: 2cm; }
+            .logo-preview { width: 5cm; height: 2cm; }
+            .header h1 { font-size: 19px; }
+            .header > div:last-child { margin-left: auto; }
+        }
     </style>
 </head>
 
 <body>
 
     <div class="header">
-        <div>
-            <h1>Design Load — PT Tozen Mechanical Product</h1>
-            <small style="color: #718096;">Track & Monitor Design Requests Across CD, MD, & RD</small>
+        <div class="header-brand">
+            <img class="company-logo" alt="Company logo" hidden>
+            <div>
+                <h1>Design Load — PT Tozen Mechanical Product</h1>
+                <small>Track & Monitor Design Requests Across CD, MD, & RD</small>
+            </div>
         </div>
         <div>
-            <button class="btn btn-admin" id="btnEditWeb" onclick="bukaEditorWeb()" style="display:none; margin-right:6px;">⚙️ Edit Web</button>
-            <button class="btn btn-admin" id="btnAdminMode" onclick="aktifkanAdmin()">Login Admin</button>
+            <button class="btn btn-admin" id="btnEditWeb" onclick="bukaEditorWeb()" style="display:none; margin-right:6px;">⚙️ Edit Website</button>
+            <button class="btn btn-admin" id="btnAdminMode" onclick="aktifkanAdmin()">Admin Login</button>
         </div>
     </div>
 
@@ -172,11 +244,11 @@
         <h3 style="margin-top:0; color:#2b6cb0;">Drawing Request Entry</h3>
         <div class="form-grid">
             <div>
-                <label>Nama Project / Gambar</label>
-                <input type="text" id="projName" placeholder="Contoh: Banner Promo Gajian">
+                <label>Project Name</label>
+                <input type="text" id="projName" placeholder="Example: Pump Housing Redesign">
             </div>
             <div>
-                <label>Asal Divisi</label>
+                <label>Division</label>
                 <select id="projDivisi">
                     <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
                     <option value="Rubber Division (RD)">Rubber Division (RD)</option>
@@ -184,7 +256,7 @@
                 </select>
             </div>
             <div>
-                <label>Tipe Permintaan</label>
+                <label>Type</label>
                 <select id="projRequestType">
                     <option value="3D Only">3D Only</option>
                     <option value="2D Only">2D Only</option>
@@ -192,52 +264,152 @@
                 </select>
             </div>
             <div>
-                <label>Batas Waktu (Deadline)</label>
+                <label>System Entry Time</label>
+                <input type="datetime-local" id="projEntryTime" required>
+            </div>
+            <div>
+                <label>Deadline</label>
                 <input type="datetime-local" id="projDeadline">
             </div>
+            <div>
+                <label>Additional Notes (Optional)</label>
+                <textarea id="projNotes" placeholder="Add any relevant details or notes"></textarea>
+            </div>
         </div>
-        <button class="btn btn-submit" onclick="tambahProject()">📥 Masukkan Data ke Antrean</button>
+        <button class="btn btn-submit" onclick="tambahProject()">📥 Add Request to Queue</button>
     </div>
+
+    <dialog id="editProjectDialog">
+        <form id="editProjectForm">
+            <h3 style="margin-top:0; color:#2b6cb0;">Edit Project Details</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="editProjectName">Project Name</label>
+                    <input type="text" id="editProjectName" required>
+                </div>
+                <div>
+                    <label for="editProjectDivision">Division</label>
+                    <select id="editProjectDivision">
+                        <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
+                        <option value="Rubber Division (RD)">Rubber Division (RD)</option>
+                        <option value="Casting Division (CD)">Casting Division (CD)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editProjectEntryTime">System Entry Time</label>
+                    <input type="datetime-local" id="editProjectEntryTime">
+                </div>
+                <div>
+                    <label for="editProjectDeadline">Deadline</label>
+                    <input type="datetime-local" id="editProjectDeadline">
+                </div>
+                <div>
+                    <label for="editProjectType">Type</label>
+                    <select id="editProjectType">
+                        <option value="3D Only">3D Only</option>
+                        <option value="2D Only">2D Only</option>
+                        <option value="3D + 2D">3D + 2D</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editProjectStatus">Process Status</label>
+                    <select id="editProjectStatus">
+                        <option value="queue">Incoming</option>
+                        <option value="loading">In Progress</option>
+                        <option value="review">Under Review</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editProjectNotes">Additional Notes (Optional)</label>
+                    <textarea id="editProjectNotes" placeholder="Add any relevant details or notes"></textarea>
+                </div>
+                <div>
+                    <label for="editProjectProgressNote">Add Progress Note (date and time added automatically)</label>
+                    <textarea id="editProjectProgressNote" placeholder="Describe the revision or progress update"></textarea>
+                </div>
+                <div>
+                    <label>Progress Notes History</label>
+                    <div id="editProjectProgressHistory" class="notes-content progress-notes-list">No progress notes yet.</div>
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-admin" type="button" onclick="document.getElementById('editProjectDialog').close()">Cancel</button>
+                <button class="btn btn-submit" style="width:auto; margin-top:0;" type="submit">Save Changes</button>
+            </div>
+        </form>
+    </dialog>
 
     <!-- ADMIN EDITOR WEB -->
     <div class="admin-panel" id="webEditorPanel" style="display:none;">
-        <h3 style="margin-top:0; color:#2b6cb0;">⚙ Edit Tampilan Web</h3>
+        <h3 style="margin-top:0; color:#2b6cb0;">⚙ Edit Website Appearance</h3>
         <div class="form-grid">
-            <div><label>Judul Dashboard</label><input type="text" id="webTitle"></div>
-            <div><label>Subjudul Dashboard</label><input type="text" id="webSubtitle"></div>
-            <div><label>Judul Form Input</label><input type="text" id="webFormTitle"></div>
-            <div><label>Judul Daftar Riwayat</label><input type="text" id="webHistoryTitle"></div>
-            <div><label>Nama Status 1</label><input type="text" id="webQueueTitle"></div>
-            <div><label>Nama Status 2</label><input type="text" id="webLoadingTitle"></div>
-            <div><label>Nama Status 3</label><input type="text" id="webReviewTitle"></div>
-            <div><label>Nama Status 4</label><input type="text" id="webDoneTitle"></div>
+            <div><label>Dashboard Title</label><input type="text" id="webTitle"></div>
+            <div><label>Dashboard Subtitle</label><input type="text" id="webSubtitle"></div>
+            <div>
+                <label for="webLogoInput">Company Logo</label>
+                <div class="logo-editor">
+                    <img id="webLogoPreview" class="logo-preview" alt="Logo preview" hidden>
+                    <input type="file" id="webLogoInput" accept="image/png,image/jpeg,image/webp" onchange="handleLogoSelection(event)">
+                    <button class="btn btn-action" type="button" onclick="clearSelectedLogo()">Remove Logo</button>
+                </div>
+                <small>Choose a PNG, JPG, or WebP image. The saved logo will be shared with all users.</small>
+            </div>
+            <div><label>Request Form Title</label><input type="text" id="webFormTitle"></div>
+            <div><label>History List Title</label><input type="text" id="webHistoryTitle"></div>
+            <div><label>Status 1 Name</label><input type="text" id="webQueueTitle"></div>
+            <div><label>Status 2 Name</label><input type="text" id="webLoadingTitle"></div>
+            <div><label>Status 3 Name</label><input type="text" id="webReviewTitle"></div>
+            <div><label>Status 4 Name</label><input type="text" id="webDoneTitle"></div>
         </div>
-        <button class="btn btn-submit" onclick="simpanPengaturanWeb()">💾 Simpan Perubahan Tampilan</button>
+        <button class="btn btn-submit" id="webSettingsSave" onclick="simpanPengaturanWeb()">💾 Save Appearance Changes</button>
     </div>
 
     <div class="main-layout">
         <!-- TABEL RIWAYAT -->
         <div class="list-section">
             <h3>
-                <span>📋 Master Log & History List</span>
+                <span><span id="historyTitleText">📋 Master Log & History List</span><span id="totalProjectCount" class="total-project-count">Total Projects: 0</span></span>
                 <div>
                     <button class="btn btn-backup" id="btnBackupJSON" onclick="backupDataJSON()">💾 Backup JSON</button>
                     <button class="btn btn-backup" id="btnRestoreJSON" onclick="pilihFileRestore()">📂 Restore JSON</button>
-                    <button class="btn btn-excel" id="btnExportExcel" onclick="eksporKeExcel()">📥 Ekspor Semua ke Excel</button>
+                    <button class="btn btn-excel" id="btnExportExcel" onclick="eksporKeExcel()">📥 Export All to Excel</button>
                 </div>
             </h3>
+            <div class="history-sort-controls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0;">
+                <label for="historySortBy" style="margin:0;">Sort by</label>
+                <select id="historySortBy" style="width:auto; min-width:180px;">
+                    <option value="name">Project Name</option>
+                    <option value="entry">Entry Date</option>
+                    <option value="deadline">Deadline Date</option>
+                </select>
+                <label for="historySortDirection" style="margin:0;">Order</label>
+                <select id="historySortDirection" style="width:auto; min-width:150px;">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+                <label for="historyDivisionFilter" style="margin:0;">Division</label>
+                <select id="historyDivisionFilter" style="width:auto; min-width:220px;">
+                    <option value="all">All Divisions</option>
+                    <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
+                    <option value="Rubber Division (RD)">Rubber Division (RD)</option>
+                    <option value="Casting Division (CD)">Casting Division (CD)</option>
+                </select>
+            </div>
             <div class="table-container">
                 <table id="tabelRiwayatUtama">
                     <thead>
                         <tr>
                             <th style="width: 40px;">No</th>
-                            <th>Nama Project / Gambar</th>
-                            <th>Divisi Peminta</th>
-                            <th>Waktu Masuk Sistem</th>
-                            <th>Batas Deadline</th>
-                            <th>Tipe Permintaan</th>
-                            <th>Status Proses</th>
-                            <th id="th-aksi" style="display: none; width: 180px;">Aksi Admin</th>
+                            <th>Project Name</th>
+                            <th>Division</th>
+                            <th>System Entry Time</th>
+                            <th>Deadline</th>
+                            <th>Type</th>
+                            <th>Notes</th>
+                            <th>Progress Notes</th>
+                            <th>Process Status</th>
+                            <th id="th-aksi" style="display: none; width: 180px;">Admin Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tableHistoryBody"></tbody>
@@ -267,7 +439,7 @@
     </div>
 
 <script>
-    const firebaseConfig = {
+const firebaseConfig = {
         apiKey: "AIzaSyB8pvM7zLAWHepWNxCVtXOUFkPb4ClTwC0",
         authDomain: "loading-design-tmp.firebaseapp.com",
         databaseURL: "https://loading-design-tmp-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -284,10 +456,15 @@
 
     let projects = [];
     let isAdmin = false;
+    let editingProjectKey = null;
+    const BOARD_PREVIEW_LIMIT = 5;
+    const boardExpanded = { queue: false, loading: false, review: false, done: false };
 
     const LOCAL_STORAGE_KEY = 'papan_antrean_local_cache_v2';
     const WEB_SETTINGS_KEY = 'papan_antrean_web_settings_v1';
     const settingsRef = firebase.database().ref('dashboard_settings');
+    let selectedLogoData = null;
+    let isLogoProcessing = false;
 
     const DEFAULT_WEB_SETTINGS = {
         title: 'Design Load — PT Tozen Mechanical Product',
@@ -315,6 +492,104 @@
             .replace(/'/g, '&#039;');
     }
 
+    function toDateTimeLocalValue(value) {
+        if (!value || value === '-') return '';
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const pad = part => String(part).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function formatDateTime(value) {
+        if (!value || value === '-') return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderProgressNotes(progressNotes) {
+        if (!Array.isArray(progressNotes) || progressNotes.length === 0) return 'No progress notes yet.';
+        return `<div class="progress-notes-list">${progressNotes.map(note => {
+            const text = typeof note === 'string' ? note : note?.text;
+            if (!text) return '';
+            const date = typeof note === 'string' || !note?.createdAt ? '' : formatDateTime(note.createdAt);
+            return `<div class="progress-note">${date ? `<span class="progress-note-date">${escapeHTML(date)}</span>` : ''}${escapeHTML(text)}</div>`;
+        }).join('')}</div>`;
+    }
+
+    function getSortableDate(value) {
+        if (!value || value === '-') return null;
+        const timestamp = new Date(value).getTime();
+        if (!Number.isNaN(timestamp)) return timestamp;
+
+        const monthNumbers = {
+            jan: 0, january: 0, januari: 0,
+            feb: 1, february: 1, februari: 1,
+            mar: 2, march: 2, maret: 2,
+            apr: 3, april: 3,
+            may: 4, mei: 4,
+            jun: 5, june: 5, juni: 5,
+            jul: 6, july: 6, juli: 6,
+            aug: 7, august: 7, agu: 7, agustus: 7,
+            sep: 8, sept: 8, september: 8,
+            oct: 9, october: 9, okt: 9, oktober: 9,
+            nov: 10, november: 10,
+            dec: 11, december: 11, des: 11, desember: 11
+        };
+        const dateTime = '(?:\\s*[-,]\\s*(\\d{1,2})[:.](\\d{2})(?:\\s*(AM|PM))?)?';
+        const dayFirst = String(value).match(new RegExp(`^(\\d{1,2})\\s+([a-z]+)\\s+(\\d{4})${dateTime}$`, 'i'));
+        const monthFirst = String(value).match(new RegExp(`^([a-z]+)\\s+(\\d{1,2}),?\\s+(\\d{4})${dateTime}$`, 'i'));
+        const match = dayFirst || monthFirst;
+        if (!match) return null;
+
+        const day = Number(dayFirst ? match[1] : match[2]);
+        const month = monthNumbers[(dayFirst ? match[2] : match[1]).toLowerCase()];
+        const year = Number(match[3]);
+        let hour = Number(match[4] || 0);
+        const minute = Number(match[5] || 0);
+        const meridiem = match[6]?.toUpperCase();
+        if (month === undefined || minute > 59 || hour > 23) return null;
+        if (meridiem) {
+            if (hour < 1 || hour > 12) return null;
+            hour = (hour % 12) + (meridiem === 'PM' ? 12 : 0);
+        }
+        const date = new Date(year, month, day, hour, minute);
+        if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
+        return date.getTime();
+    }
+
+    function getSortedHistoryProjects() {
+        const sortBy = document.getElementById('historySortBy').value;
+        const direction = document.getElementById('historySortDirection').value === 'desc' ? -1 : 1;
+        const division = document.getElementById('historyDivisionFilter').value;
+        return projects
+            .filter(project => division === 'all' || project.divisi === division)
+            .sort((a, b) => {
+            if (sortBy === 'name') {
+                return direction * String(a.name || '').localeCompare(String(b.name || ''), 'en', { sensitivity: 'base', numeric: true });
+            }
+
+            const field = sortBy === 'entry' ? 'waktuMasuk' : 'deadline';
+            const dateA = getSortableDate(a[field]);
+            const dateB = getSortableDate(b[field]);
+            if (dateA === null || dateB === null) {
+                if (dateA === dateB) return Number(a.id || 0) - Number(b.id || 0);
+                return dateA === null ? 1 : -1;
+            }
+            return direction * (dateA - dateB) || Number(a.id || 0) - Number(b.id || 0);
+        });
+    }
+
+    function toggleBoardExpansion(status) {
+        if (!Object.prototype.hasOwnProperty.call(boardExpanded, status)) return;
+        boardExpanded[status] = !boardExpanded[status];
+        renderBoard();
+    }
+
+    function setDefaultEntryTime() {
+        document.getElementById('projEntryTime').value = toDateTimeLocalValue(new Date());
+    }
+
     function simpanCacheLokal() {
         try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projects)); } catch (e) {}
     }
@@ -338,7 +613,7 @@
         document.getElementById('btnBackupJSON').style.display = isAdmin ? 'inline-block' : 'none';
         document.getElementById('btnRestoreJSON').style.display = isAdmin ? 'inline-block' : 'none';
         document.getElementById('th-aksi').style.display = isAdmin ? 'table-cell' : 'none';
-        document.getElementById('btnAdminMode').innerText = isAdmin ? 'Logout Admin' : 'Login Admin';
+        document.getElementById('btnAdminMode').innerText = isAdmin ? 'Admin Logout' : 'Admin Login';
         document.getElementById('btnEditWeb').style.display = isAdmin ? 'inline-block' : 'none';
         if (!isAdmin) document.getElementById('webEditorPanel').style.display = 'none';
         renderBoard();
@@ -347,8 +622,11 @@
     function applyWebSettings() {
         document.querySelector('.header h1').innerText = webSettings.title;
         document.querySelector('.header small').innerText = webSettings.subtitle;
+        const logo = document.querySelector('.company-logo');
+        logo.hidden = !webSettings.logoData;
+        if (webSettings.logoData) logo.src = webSettings.logoData;
         document.querySelector('#adminPanel h3').innerText = webSettings.formTitle;
-        document.querySelector('.list-section h3 span').innerText = webSettings.historyTitle;
+        document.getElementById('historyTitleText').innerText = webSettings.historyTitle;
         document.querySelector('#col-queue').previousElementSibling.firstChild.textContent = webSettings.queueTitle + ' ';
         document.querySelector('#col-loading').previousElementSibling.firstChild.textContent = webSettings.loadingTitle + ' ';
         document.querySelector('#col-review').previousElementSibling.firstChild.textContent = webSettings.reviewTitle + ' ';
@@ -366,12 +644,85 @@
     function fillWebEditor() {
         document.getElementById('webTitle').value = webSettings.title;
         document.getElementById('webSubtitle').value = webSettings.subtitle;
+        selectedLogoData = null;
+        renderLogoPreview();
         document.getElementById('webFormTitle').value = webSettings.formTitle;
         document.getElementById('webHistoryTitle').value = webSettings.historyTitle;
         document.getElementById('webQueueTitle').value = webSettings.queueTitle;
         document.getElementById('webLoadingTitle').value = webSettings.loadingTitle;
         document.getElementById('webReviewTitle').value = webSettings.reviewTitle;
         document.getElementById('webDoneTitle').value = webSettings.doneTitle;
+    }
+
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => typeof reader.result === 'string'
+                ? resolve(reader.result)
+                : reject(new Error('The selected logo could not be read.'));
+            reader.onerror = () => reject(reader.error || new Error('The selected logo could not be read.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function compressLogo(file) {
+        const supportedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!supportedTypes.includes(file.type)) {
+            throw new Error('Choose a PNG, JPG, or WebP image.');
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            throw new Error('The selected image is too large. Choose an image smaller than 10 MB.');
+        }
+
+        const bitmap = await createImageBitmap(file);
+        try {
+            const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+            canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            const compressed = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.85));
+            if (!compressed) throw new Error('The selected logo could not be processed.');
+            if (compressed.size > 300 * 1024) {
+                throw new Error('The compressed logo is still too large. Choose a simpler or smaller image.');
+            }
+            return await readFileAsDataURL(compressed);
+        } finally {
+            bitmap.close();
+        }
+    }
+
+    function renderLogoPreview() {
+        const preview = document.getElementById('webLogoPreview');
+        const logoData = selectedLogoData === null ? (webSettings.logoData || '') : selectedLogoData;
+        preview.hidden = !logoData;
+        if (logoData) preview.src = logoData;
+        else preview.removeAttribute('src');
+    }
+
+    async function handleLogoSelection(event) {
+        if (!isAdmin) return;
+        const file = event.target.files?.[0];
+        if (!file) return;
+        isLogoProcessing = true;
+        document.getElementById('webSettingsSave').disabled = true;
+        try {
+            selectedLogoData = await compressLogo(file);
+            renderLogoPreview();
+        } catch (error) {
+            event.target.value = '';
+            alert(error.message || 'The selected logo could not be processed.');
+        } finally {
+            isLogoProcessing = false;
+            document.getElementById('webSettingsSave').disabled = false;
+        }
+    }
+
+    function clearSelectedLogo() {
+        if (!isAdmin) return;
+        selectedLogoData = '';
+        document.getElementById('webLogoInput').value = '';
+        renderLogoPreview();
     }
 
     function bukaEditorWeb() {
@@ -384,9 +735,14 @@
 
     async function simpanPengaturanWeb() {
         if (!isAdmin) return;
+        if (isLogoProcessing) {
+            alert('Please wait for the logo to finish processing.');
+            return;
+        }
         webSettings = {
             title: document.getElementById('webTitle').value.trim() || DEFAULT_WEB_SETTINGS.title,
             subtitle: document.getElementById('webSubtitle').value.trim() || DEFAULT_WEB_SETTINGS.subtitle,
+            logoData: selectedLogoData === null ? (webSettings.logoData || '') : selectedLogoData,
             formTitle: document.getElementById('webFormTitle').value.trim() || DEFAULT_WEB_SETTINGS.formTitle,
             historyTitle: document.getElementById('webHistoryTitle').value.trim() || DEFAULT_WEB_SETTINGS.historyTitle,
             queueTitle: document.getElementById('webQueueTitle').value.trim() || DEFAULT_WEB_SETTINGS.queueTitle,
@@ -396,14 +752,22 @@
         };
         localStorage.setItem(WEB_SETTINGS_KEY, JSON.stringify(webSettings));
         applyWebSettings();
+        selectedLogoData = null;
+        renderLogoPreview();
+        document.getElementById('webLogoInput').value = '';
         try {
             await settingsRef.set(webSettings);
-            alert('Tampilan web berhasil disimpan.');
+            alert('Website appearance saved successfully.');
         } catch (error) {
-            alert('Tampilan web disimpan lokal.');
+            alert('Website appearance was saved locally, but could not be synced to the server.');
         }
     }
 
+    document.getElementById('editProjectForm').addEventListener('submit', saveProjectEdits);
+    document.getElementById('historySortBy').addEventListener('change', renderBoard);
+    document.getElementById('historySortDirection').addEventListener('change', renderBoard);
+    document.getElementById('historyDivisionFilter').addEventListener('change', renderBoard);
+    setDefaultEntryTime();
     loadWebSettings();
 
     settingsRef.on('value', (snapshot) => {
@@ -432,19 +796,19 @@
     async function aktifkanAdmin() {
         if (isAdmin) {
             await auth.signOut();
-            alert("Logout berhasil.");
+            alert("Logged out successfully.");
             return;
         }
-        const email = prompt("Masukkan Email Owner/Admin:");
+        const email = prompt("Enter the owner/admin email:");
         if (!email) return;
-        const password = prompt("Masukkan Password:");
+        const password = prompt("Enter the password:");
         if (!password) return;
 
         try {
             await auth.signInWithEmailAndPassword(email.trim(), password);
-            alert("Login Admin Berhasil!");
+            alert("Admin login successful!");
         } catch (error) {
-            alert("Login gagal: " + error.message);
+            alert("Login failed: " + error.message);
         }
     }
 
@@ -454,21 +818,21 @@
         const name = nameEl.value.trim();
         const divisi = document.getElementById('projDivisi').value;
         const requestType = document.getElementById('projRequestType').value;
+        const entryTime = document.getElementById('projEntryTime').value;
         const deadline = document.getElementById('projDeadline').value;
+        const notes = document.getElementById('projNotes').value.trim();
 
-        if (!name) { alert("Nama Project kosong!"); return; }
-
-        const waktuSekarang = new Date();
-        const stringWaktu = waktuSekarang.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + waktuSekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const formatDeadline = deadline ? new Date(deadline).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+        if (!name) { alert("Project name is required."); return; }
+        if (!entryTime) { alert("System entry time is required."); return; }
 
         const newProject = {
             id: Date.now() + Math.random(),
             name: name,
             divisi: divisi,
             requestType: requestType,
-            waktuMasuk: stringWaktu,
-            deadline: formatDeadline,
+            waktuMasuk: entryTime,
+            deadline: deadline || '-',
+            notes: notes,
             status: 'queue',
             _localOnly: true,
             fbKey: 'local_' + Date.now()
@@ -479,7 +843,9 @@
         renderBoard();
 
         nameEl.value = '';
+        document.getElementById('projNotes').value = '';
         document.getElementById('projDeadline').value = '';
+        setDefaultEntryTime();
 
         try {
             const cloudData = { ...newProject };
@@ -487,7 +853,7 @@
             delete cloudData.fbKey;
             await dbRef.push(cloudData);
         } catch (error) {
-            alert("Tersimpan secara lokal.");
+            alert("The request was saved locally, but could not be synced to the server.");
         }
     }
 
@@ -503,48 +869,79 @@
         }
     }
 
-    async function editWaktuMasuk(fbKey) {
-        if (!isAdmin) return;
-        const project = projects.find(p => p.fbKey === fbKey);
-        if (!project) return;
-        const inputWaktuBaru = prompt("Edit Waktu Masuk Sistem:", project.waktuMasuk || '');
-        if (!inputWaktuBaru) return;
-        project.waktuMasuk = inputWaktuBaru.trim();
-        simpanCacheLokal();
-        renderBoard();
-        if (!String(fbKey).startsWith('local_')) {
-            await firebase.database().ref('antrean_proyek/' + fbKey).update({ waktuMasuk: project.waktuMasuk });
-        }
-    }
-
     async function editProject(fbKey) {
         if (!isAdmin) return;
         const project = projects.find(p => p.fbKey === fbKey);
         if (!project) return;
 
-        const newName = prompt("Nama Project / Gambar:", project.name || '');
-        if (!newName) return;
+        editingProjectKey = fbKey;
+        document.getElementById('editProjectName').value = project.name || '';
+        document.getElementById('editProjectDivision').value = project.divisi || 'Mechanical Division (MD)';
+        document.getElementById('editProjectEntryTime').value = toDateTimeLocalValue(project.waktuMasuk);
+        document.getElementById('editProjectDeadline').value = toDateTimeLocalValue(project.deadline);
+        document.getElementById('editProjectType').value = project.requestType || '3D Only';
+        document.getElementById('editProjectStatus').value = project.status || 'queue';
+        document.getElementById('editProjectNotes').value = project.notes || '';
+        document.getElementById('editProjectProgressNote').value = '';
+        document.getElementById('editProjectProgressHistory').innerHTML = renderProgressNotes(project.progressNotes);
+        document.getElementById('editProjectDialog').showModal();
+    }
 
-        const divisiChoice = prompt(
-            "Pilih Divisi Peminta:\n1. Mechanical Division (MD)\n2. Rubber Division (RD)\n3. Casting Division (CD)",
-            project.divisi.includes('Rubber') ? '2' : (project.divisi.includes('Casting') ? '3' : '1')
-        );
-        const divisiMap = { '1': 'Mechanical Division (MD)', '2': 'Rubber Division (RD)', '3': 'Casting Division (CD)' };
-        if (!divisiMap[divisiChoice]) return;
+    async function saveProjectEdits(event) {
+        event.preventDefault();
+        if (!isAdmin || !editingProjectKey) return;
+        const project = projects.find(p => p.fbKey === editingProjectKey);
+        if (!project) {
+            document.getElementById('editProjectDialog').close();
+            editingProjectKey = null;
+            return;
+        }
 
-        project.name = newName.trim();
-        project.divisi = divisiMap[divisiChoice];
+        const name = document.getElementById('editProjectName').value.trim();
+        const entryTime = document.getElementById('editProjectEntryTime').value;
+        if (!name) {
+            alert("Project name is required.");
+            return;
+        }
+        if (!entryTime && !project.waktuMasuk) {
+            alert("System entry time is required.");
+            return;
+        }
+
+        const progressNotes = Array.isArray(project.progressNotes) ? [...project.progressNotes] : [];
+        const progressText = document.getElementById('editProjectProgressNote').value.trim();
+        if (progressText) {
+            progressNotes.push({ text: progressText, createdAt: new Date().toISOString() });
+        }
+
+        const updates = {
+            name,
+            divisi: document.getElementById('editProjectDivision').value,
+            waktuMasuk: entryTime || project.waktuMasuk,
+            deadline: document.getElementById('editProjectDeadline').value || '-',
+            requestType: document.getElementById('editProjectType').value,
+            status: document.getElementById('editProjectStatus').value,
+            notes: document.getElementById('editProjectNotes').value.trim(),
+            progressNotes
+        };
+        Object.assign(project, updates);
         simpanCacheLokal();
         renderBoard();
+        document.getElementById('editProjectDialog').close();
+        editingProjectKey = null;
 
-        if (!String(fbKey).startsWith('local_')) {
-            await firebase.database().ref('antrean_proyek/' + fbKey).update({ name: project.name, divisi: project.divisi });
+        if (!String(project.fbKey).startsWith('local_')) {
+            try {
+                await firebase.database().ref('antrean_proyek/' + project.fbKey).update(updates);
+            } catch (error) {
+                alert("Changes are saved locally but could not be synced to the server: " + error.message);
+            }
         }
     }
 
     async function hapusProject(fbKey) {
         if (!isAdmin) return;
-        if (confirm("Hapus project ini?")) {
+        if (confirm("Delete this project?")) {
             projects = projects.filter(p => p.fbKey !== fbKey);
             simpanCacheLokal();
             renderBoard();
@@ -562,9 +959,35 @@
         const tableBody = document.getElementById('tableHistoryBody');
 
         colQ.innerHTML = ''; colL.innerHTML = ''; colR.innerHTML = ''; colD.innerHTML = ''; tableBody.innerHTML = '';
-        let cQ = 0, cL = 0, cR = 0, cD = 0;
+        document.getElementById('totalProjectCount').innerText = `Total Projects: ${projects.length}`;
+        const statusColumns = {
+            queue: { element: colQ, countElement: document.getElementById('count-q') },
+            loading: { element: colL, countElement: document.getElementById('count-l') },
+            review: { element: colR, countElement: document.getElementById('count-r') },
+            done: { element: colD, countElement: document.getElementById('count-d') }
+        };
+        const projectsByStatus = Object.fromEntries(Object.keys(statusColumns).map(status => [
+            status,
+            projects
+                .filter(project => project.status === status)
+                .sort((a, b) => {
+                    const dateA = getSortableDate(a.waktuMasuk);
+                    const dateB = getSortableDate(b.waktuMasuk);
+                    if (dateA === null || dateB === null) {
+                        if (dateA === dateB) return Number(b.id || 0) - Number(a.id || 0);
+                        return dateA === null ? 1 : -1;
+                    }
+                    return (dateB - dateA) || Number(b.id || 0) - Number(a.id || 0);
+                })
+        ]));
+        const visibleProjectKeys = new Set();
+        Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
+            const visibleProjects = boardExpanded[status] ? statusProjects : statusProjects.slice(0, BOARD_PREVIEW_LIMIT);
+            visibleProjects.forEach(project => visibleProjectKeys.add(project.fbKey));
+            statusColumns[status].countElement.innerText = statusProjects.length;
+        });
 
-        projects.forEach((p, index) => {
+        Object.values(projectsByStatus).flat().forEach(p => {
             let kelasDivisi = 'divisi-md';
             let labelBadge = 'badge-md';
             if (p.divisi.includes('Rubber')) { kelasDivisi = 'divisi-rd'; labelBadge = 'badge-rd'; }
@@ -578,27 +1001,42 @@
                 else if (p.status === 'review') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'loading')">⏪ Edit</button><button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'done')">⏩ Done</button>`;
                 else if (p.status === 'done') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'review')">⏪ Review</button>`;
 
-                tombolAksi = `<div class="card-actions"><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit</button><button class="btn-action" style="background:#eBF8FF; color:#2B6CB0;" onclick="editWaktuMasuk('${escapeHTML(p.fbKey)}')">🕒 Jam Masuk</button><button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Hapus</button>${nav}</div>`;
+                tombolAksi = `<div class="card-actions"><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button><button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button>${nav}</div>`;
             }
 
-            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 Masuk: <strong>${escapeHTML(p.waktuMasuk)}</strong></div><div class="card-meta">🚨 Batas: <strong>${escapeHTML(p.deadline)}</strong></div><div class="card-meta">🧩 Permintaan: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${tombolAksi}</div>`;
+            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 System Entry Time: <strong>${escapeHTML(formatDateTime(p.waktuMasuk))}</strong></div><div class="card-meta">🚨 Deadline: <strong>${escapeHTML(formatDateTime(p.deadline))}</strong></div><div class="card-meta">🧩 Type: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${p.notes ? `<div class="card-meta">📝 Notes: <div class="notes-content">${escapeHTML(p.notes)}</div></div>` : ''}${Array.isArray(p.progressNotes) && p.progressNotes.length ? `<div class="card-meta">📌 Progress Notes: <div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></div>` : ''}${tombolAksi}</div>`;
 
-            if (p.status === 'queue') { colQ.innerHTML += HTMLKartu; cQ++; }
-            if (p.status === 'loading') { colL.innerHTML += HTMLKartu; cL++; }
-            if (p.status === 'review') { colR.innerHTML += HTMLKartu; cR++; }
-            if (p.status === 'done') { colD.innerHTML += HTMLKartu; cD++; }
+            if (visibleProjectKeys.has(p.fbKey)) {
+                statusColumns[p.status]?.element.insertAdjacentHTML('beforeend', HTMLKartu);
+            }
 
+        });
+
+        Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
+            if (statusProjects.length <= BOARD_PREVIEW_LIMIT) return;
+            const buttonLabel = boardExpanded[status] ? 'Show latest 5' : `Show all (${statusProjects.length})`;
+            statusColumns[status].element.insertAdjacentHTML(
+                'beforeend',
+                `<button class="btn-action" style="width:100%; padding:8px; margin:4px 0 8px;" onclick="toggleBoardExpansion('${status}')">${buttonLabel}</button>`
+            );
+        });
+
+        getSortedHistoryProjects().forEach((p, index) => {
             const statusClass = p.status === 'queue' ? 'q' : (p.status === 'loading' ? 'l' : (p.status === 'review' ? 'r' : 'd'));
             const statusText = p.status === 'queue' ? '📥 Incoming' : (p.status === 'loading' ? '⏳ In Progress' : (p.status === 'review' ? '🔍 Under Review' : '✅ Done'));
             const badgeStatus = `<span class="status-pill status-${statusClass}">${statusText}</span>`;
-
-            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(p.waktuMasuk)}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(p.deadline)}</td><td>${escapeHTML(p.requestType || '-')}</td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit</button> <button class="btn-action" style="background:#eBF8FF; color:#2B6CB0;" onclick="editWaktuMasuk('${escapeHTML(p.fbKey)}')">🕒 Jam Masuk</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Hapus</button></td>` : ''}</tr>`;
+            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button></td>` : ''}</tr>`;
         });
 
-        document.getElementById('count-q').innerText = cQ;
-        document.getElementById('count-l').innerText = cL;
-        document.getElementById('count-r').innerText = cR;
-        document.getElementById('count-d').innerText = cD;
+        const historyTableContainer = document.querySelector('#tabelRiwayatUtama').parentElement;
+        const historyRows = Array.from(tableBody.rows);
+        if (historyRows.length > 10) {
+            const visibleRowsHeight = historyRows.slice(0, 10).reduce((height, row) => height + row.getBoundingClientRect().height, 0);
+            const headerHeight = document.querySelector('#tabelRiwayatUtama thead').getBoundingClientRect().height;
+            historyTableContainer.style.maxHeight = `${Math.ceil(visibleRowsHeight + headerHeight)}px`;
+        } else {
+            historyTableContainer.style.maxHeight = '';
+        }
     }
 </script>
 </body>
