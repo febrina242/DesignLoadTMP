@@ -211,6 +211,40 @@
         .status-l { background: #feebc8; color: #c05621; }
         .status-r { background: #ebf8ff; color: #2b6cb0; }
         .status-d { background: #c6f6d5; color: #22543d; }
+        .app-shell { display: grid; grid-template-columns: 3.5cm minmax(0,1fr); gap: 18px; max-width: 1400px; margin: 0 auto; align-items: start; }
+        .app-nav { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 20px; padding: 6px; background: #dce9f6; border: 1px solid var(--border-color); border-radius: 9px; }
+        .app-nav button { width: 100%; padding: 10px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--blue-900); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
+        .app-nav button[aria-current="page"] { color: #fff; background: var(--blue-800); border-color: var(--blue-900); box-shadow: 0 2px 6px rgba(18,52,90,.2); }
+        .app-main { min-width: 0; }
+        .app-page[hidden], [hidden] { display: none !important; }
+        .checksheet-intro, .checksheet-summary, .checksheet-toolbar { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 5px 16px rgba(18,52,90,.06); }
+        .checksheet-intro { padding: 22px; margin-bottom: 16px; border-top: 3px solid var(--blue-700); }
+        .checksheet-intro h2 { margin: 0 0 6px; color: var(--blue-900); }
+        .checksheet-intro p { margin: 0; color: #53657c; }
+        .checksheet-scope { display: inline-block; margin-top: 12px; padding: 6px 10px; color: var(--blue-900); background: var(--blue-100); border-radius: 6px; font-size: 12px; font-weight: 700; }
+        .checksheet-summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; padding: 14px; margin-bottom: 16px; }
+        .checksheet-stat { padding: 12px; background: var(--blue-050); border-radius: 7px; }
+        .checksheet-stat strong { display: block; color: var(--blue-900); font-size: 21px; }
+        .checksheet-stat span { color: #53657c; font-size: 12px; }
+        .checksheet-toolbar { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; padding: 15px; margin-bottom: 16px; }
+        .checksheet-toolbar > div { min-width: 170px; flex: 1; }
+        .checksheet-toolbar .search { min-width: 240px; flex: 2; }
+        .checksheet-toolbar .btn { width: auto; margin: 0; }
+        .checksheet-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,390px),1fr)); gap: 16px; }
+        .checksheet-card { background: #fff; padding: 18px; border: 1px solid var(--border-color); border-top: 3px solid var(--blue-700); border-radius: 9px; box-shadow: 0 5px 16px rgba(18,52,90,.06); }
+        .checksheet-card h3 { margin: 0 0 5px; color: var(--blue-900); overflow-wrap: anywhere; }
+        .checksheet-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+        .checksheet-badge { padding: 4px 8px; border-radius: 12px; background: var(--blue-100); color: var(--blue-900); font-size: 11px; font-weight: 700; }
+        .checksheet-badge.status-draft { background: #fff4d6; color: #845b00; }
+        .checksheet-badge.status-obsolete { background: #fee2e2; color: #991b1b; }
+        .checksheet-description { margin: 0 0 12px; color: #53657c; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .checksheet-meta { display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 8px 14px; padding-top: 12px; border-top: 1px solid #e5edf5; }
+        .checksheet-meta div { color: #53657c; font-size: 12px; overflow-wrap: anywhere; }
+        .checksheet-meta strong { display: block; color: var(--text-color); margin-bottom: 2px; }
+        .checksheet-card-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+        .checksheet-empty { grid-column: 1/-1; padding: 28px; text-align: center; color: #64748b; background: #fff; border: 1px dashed #b8cde2; border-radius: 9px; }
+        .checksheet-error { color: #9b2c2c; background: #fff5f5; border: 1px solid #feb2b2; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+        @media (max-width: 760px) { .app-shell { grid-template-columns: minmax(0,1fr); gap: 12px; } .app-nav { position: static; flex-direction: row; } .app-nav button { flex: 1; text-align: center; } }
         @media (max-width: 600px) {
             body { padding: 12px; }
             .header { align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px; }
@@ -239,6 +273,13 @@
         </div>
     </div>
 
+    <div class="app-shell">
+        <nav class="app-nav" aria-label="Main navigation">
+            <button type="button" id="navDesignLoad" aria-current="page" onclick="showAppPage('design-load')">Design Load</button>
+            <button type="button" id="navChecksheets" onclick="showAppPage('checksheets')">Checksheet</button>
+        </nav>
+        <main class="app-main" id="appMain">
+    <section id="designLoadPage" class="app-page">
     <!-- FORM INPUT -->
     <div class="admin-panel" id="adminPanel">
         <h3 style="margin-top:0; color:#2b6cb0;">Drawing Request Entry</h3>
@@ -262,6 +303,11 @@
                     <option value="2D Only">2D Only</option>
                     <option value="3D + 2D">3D + 2D</option>
                 </select>
+            </div>
+            <div style="grid-column:1/-1;">
+                <label for="projApprovedPdfUrl">Approved PDF (Google Drive)</label>
+                <input type="url" id="projApprovedPdfUrl" placeholder="https://drive.google.com/file/d/..." autocomplete="url">
+                <small>Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.</small>
             </div>
             <div>
                 <label>System Entry Time</label>
@@ -319,6 +365,10 @@
                         <option value="review">Under Review</option>
                         <option value="done">Done</option>
                     </select>
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label for="editProjectApprovedPdfUrl">Approved PDF (Google Drive)</label>
+                    <input type="url" id="editProjectApprovedPdfUrl" placeholder="https://drive.google.com/file/d/..." autocomplete="url">
                 </div>
                 <div>
                     <label for="editProjectNotes">Additional Notes (Optional)</label>
@@ -402,6 +452,7 @@
                         <tr>
                             <th style="width: 40px;">No</th>
                             <th>Project Name</th>
+                            <th>Approved PDF</th>
                             <th>Division</th>
                             <th>System Entry Time</th>
                             <th>Deadline</th>
@@ -417,7 +468,7 @@
             </div>
         </div>
 
-        <!-- BOARD KANBAN STATUS -->
+        <!-- Board statuses belong only to the Design Load page. -->
         <div class="board">
             <div class="column">
                 <h3>📥 Incoming <span class="count-badge" id="count-q">0</span></h3>
@@ -436,8 +487,74 @@
                 <div id="col-done"></div>
             </div>
         </div>
-    </div>
+    </section>
 
+            <section id="checksheetsPage" class="app-page" hidden aria-labelledby="checksheetPageTitle">
+                <div class="checksheet-intro">
+                    <h2 id="checksheetPageTitle">Design Checksheet</h2>
+                    <p>Engineering checksheets for the Casting Division, containing standard drawings, measurement points, and fields to record actual measurement results.</p>
+                    <span class="checksheet-scope">Engineering · Casting Division (CD)</span>
+                </div>
+                <div class="checksheet-summary" aria-live="polite">
+                    <div class="checksheet-stat"><strong id="checksheetTotalCount">0</strong><span id="checksheetTotalLabel">Published checksheets</span></div>
+                    <div class="checksheet-stat" id="checksheetPublishedStat" hidden><strong id="checksheetPublishedCount">0</strong><span>Published</span></div>
+                    <div class="checksheet-stat"><strong id="checksheetLatestUpdate">-</strong><span>Latest update</span></div>
+                </div>
+                <div id="checksheetError" class="checksheet-error" role="alert" hidden></div>
+                <div class="checksheet-toolbar">
+                    <div class="search">
+                        <label for="checksheetSearch">Search checksheets</label>
+                        <input type="search" id="checksheetSearch" placeholder="Search title, code, owner, or keywords..." autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="checksheetSort">Sort by</label>
+                        <select id="checksheetSort">
+                            <option value="updated">Recently updated</option>
+                            <option value="title">Title A-Z</option>
+                            <option value="effective">Effective date</option>
+                        </select>
+                    </div>
+                    <div id="checksheetStatusFilterWrap" hidden>
+                        <label for="checksheetStatusFilter">Document status</label>
+                        <select id="checksheetStatusFilter">
+                            <option value="all">All statuses</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                            <option value="obsolete">Obsolete</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-submit" id="addChecksheetButton" type="button" onclick="openChecksheetEditor()" hidden>＋ Add Design Checksheet</button>
+                </div>
+                <div id="checksheetList" class="checksheet-list" aria-live="polite"></div>
+                <div id="checksheetViewerTableContainer" class="table-container" hidden>
+                    <table id="checksheetViewerTable">
+                        <thead><tr><th>No</th><th>Document Code</th><th>Checksheet Name</th><th>Revision</th><th>Effective Date</th><th>Measurement Scope</th><th>Document Owner / PIC</th><th>Last Updated</th><th>File</th></tr></thead>
+                        <tbody id="checksheetViewerTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+                </main>
+            </div>
+
+            <dialog id="checksheetEditorDialog">
+                <form id="checksheetEditorForm">
+                    <h2 id="checksheetEditorTitle" style="margin-top:0; color:#2b6cb0;">Add Design Checksheet</h2>
+                    <div class="form-grid">
+                        <div><label for="checksheetTitle">Checksheet title *</label><input id="checksheetTitle" required maxlength="160"></div>
+                        <div><label for="checksheetDocumentCode">Document number / code</label><input id="checksheetDocumentCode" maxlength="80" placeholder="e.g. CD-ENG-001"></div>
+                        <div><label for="checksheetRevision">Revision</label><input id="checksheetRevision" maxlength="40" placeholder="e.g. Rev. 01"></div>
+                        <div><label for="checksheetOwner">Document owner / PIC</label><input id="checksheetOwner" maxlength="120"></div>
+                        <div><label for="checksheetEffectiveDate">Effective date</label><input id="checksheetEffectiveDate" type="date"></div>
+                        <div><label for="checksheetReviewDate">Next review date</label><input id="checksheetReviewDate" type="date"></div>
+                        <div><label for="checksheetStatus">Publication status</label><select id="checksheetStatus"><option value="draft">Draft (admin only)</option><option value="published">Published (visible to viewers)</option><option value="obsolete">Obsolete (admin only)</option></select></div>
+                        <div><label for="checksheetFileName">PDF display name</label><input id="checksheetFileName" maxlength="160" placeholder="e.g. Casting Checksheet.pdf"></div>
+                        <div style="grid-column:1/-1;"><label for="checksheetFileUrl">Google Drive PDF link *</label><input id="checksheetFileUrl" type="url" placeholder="https://drive.google.com/file/d/..." autocomplete="url"><small>Paste a shareable Drive link. Set access to “Anyone with the link” as Viewer.</small></div>
+                        <div style="grid-column:1/-1;"><label for="checksheetDescription">Description / measurement scope</label><textarea id="checksheetDescription" maxlength="1500" placeholder="Describe standard drawing, measurement points and actual result fields."></textarea></div>
+                        <div style="grid-column:1/-1;"><label for="checksheetKeywords">Keywords / tags</label><input id="checksheetKeywords" maxlength="300" placeholder="Comma-separated keywords"></div>
+                    </div>
+                    <div class="dialog-actions"><button class="btn btn-admin" type="button" onclick="document.getElementById('checksheetEditorDialog').close()">Cancel</button><button class="btn btn-submit" style="width:auto; margin-top:0;" type="submit">Save Checksheet</button></div>
+                </form>
+            </dialog>
 <script>
 const firebaseConfig = {
         apiKey: "AIzaSyB8pvM7zLAWHepWNxCVtXOUFkPb4ClTwC0",
@@ -452,15 +569,20 @@ const firebaseConfig = {
 
     firebase.initializeApp(firebaseConfig);
     const dbRef = firebase.database().ref('antrean_proyek');
+    const checksheetsRef = firebase.database().ref('design_checksheets');
     const auth = firebase.auth();
 
     let projects = [];
+    let checksheets = [];
     let isAdmin = false;
     let editingProjectKey = null;
+    let editingChecksheetKey = null;
     const BOARD_PREVIEW_LIMIT = 5;
+    const VIEWER_BOARD_PREVIEW_LIMIT = 2;
     const boardExpanded = { queue: false, loading: false, review: false, done: false };
 
     const LOCAL_STORAGE_KEY = 'papan_antrean_local_cache_v2';
+    const CHECKSHEET_CACHE_KEY = 'design_checksheets_cache_v1';
     const WEB_SETTINGS_KEY = 'papan_antrean_web_settings_v1';
     const settingsRef = firebase.database().ref('dashboard_settings');
     let selectedLogoData = null;
@@ -490,6 +612,30 @@ const firebaseConfig = {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    function safeHttpsUrl(value) {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' ? url.href : '';
+        } catch {
+            return '';
+        }
+    }
+
+    function getProjectApprovedPdf(project) {
+        const fieldNames = ['approvedPdfUrl', 'approvedDrawingUrl', 'approvedPdf', 'finalPdfUrl', 'approvedFileUrl'];
+        const field = fieldNames.find(name => Object.prototype.hasOwnProperty.call(project, name));
+        return safeHttpsUrl(field ? project[field] : '');
+    }
+
+    function showAppPage(page) {
+        const checksheetActive = page === 'checksheets';
+        document.getElementById('designLoadPage').hidden = checksheetActive;
+        document.getElementById('checksheetsPage').hidden = !checksheetActive;
+        document.getElementById(checksheetActive ? 'navChecksheets' : 'navDesignLoad').setAttribute('aria-current', 'page');
+        document.getElementById(checksheetActive ? 'navDesignLoad' : 'navChecksheets').removeAttribute('aria-current');
+        renderChecksheets();
     }
 
     function toDateTimeLocalValue(value) {
@@ -604,6 +750,9 @@ const firebaseConfig = {
                 projects.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
                 renderBoard();
             }
+            const cachedChecksheets = JSON.parse(localStorage.getItem(CHECKSHEET_CACHE_KEY) || '[]');
+            if (Array.isArray(cachedChecksheets)) checksheets = cachedChecksheets;
+            renderChecksheets();
         } catch (e) {}
     }
 
@@ -615,8 +764,13 @@ const firebaseConfig = {
         document.getElementById('th-aksi').style.display = isAdmin ? 'table-cell' : 'none';
         document.getElementById('btnAdminMode').innerText = isAdmin ? 'Admin Logout' : 'Admin Login';
         document.getElementById('btnEditWeb').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('checksheetStatusFilterWrap').hidden = !isAdmin;
+        document.getElementById('addChecksheetButton').hidden = !isAdmin;
+        document.getElementById('checksheetPublishedStat').hidden = !isAdmin;
+        document.getElementById('checksheetTotalLabel').textContent = isAdmin ? 'All checksheets' : 'Published checksheets';
         if (!isAdmin) document.getElementById('webEditorPanel').style.display = 'none';
         renderBoard();
+        renderChecksheets();
     }
 
     function applyWebSettings() {
@@ -763,10 +917,162 @@ const firebaseConfig = {
         }
     }
 
+    function formatChecksheetDate(value, withTime = false) {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString('en-US', withTime
+            ? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+            : { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function checksheetUpdatedAt(item) {
+        const time = Date.parse(item.updatedAt || item.createdAt || item.effectiveDate || '');
+        return Number.isNaN(time) ? 0 : time;
+    }
+
+    function getVisibleChecksheets() {
+        const query = document.getElementById('checksheetSearch').value.trim().toLowerCase();
+        const statusFilter = isAdmin ? document.getElementById('checksheetStatusFilter').value : 'published';
+        const sort = document.getElementById('checksheetSort').value;
+        return checksheets.filter(item => {
+            const status = item.status || 'draft';
+            const searchText = [item.title, item.documentCode, item.owner, item.description, item.keywords, item.fileName, item.revision].join(' ').toLowerCase();
+            return (isAdmin ? statusFilter === 'all' || statusFilter === status : status === 'published') && (!query || searchText.includes(query));
+        }).sort((a, b) => {
+            if (sort === 'title') return String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' });
+            if (sort === 'effective') return String(b.effectiveDate || '').localeCompare(String(a.effectiveDate || ''));
+            return checksheetUpdatedAt(b) - checksheetUpdatedAt(a);
+        });
+    }
+
+    function renderChecksheetCard(item) {
+        const status = ['published', 'draft', 'obsolete'].includes(item.status) ? item.status : 'draft';
+        const url = safeHttpsUrl(item.fileUrl);
+        const actions = `${url ? `<a class="btn btn-admin" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Open PDF / Google Drive</a>` : '<span class="checksheet-badge">PDF link missing</span>'}${isAdmin ? `<button class="btn btn-admin" type="button" onclick="openChecksheetEditor('${escapeHTML(item.fbKey)}')">Edit</button><button class="btn btn-admin" type="button" onclick="deleteChecksheet('${escapeHTML(item.fbKey)}')">Delete</button>` : ''}`;
+        return `<article class="checksheet-card">
+            <h3>${escapeHTML(item.title || 'Untitled checksheet')}</h3>
+            <div class="checksheet-badges"><span class="checksheet-badge status-${status}">${escapeHTML(status)}</span>${item.documentCode ? `<span class="checksheet-badge">${escapeHTML(item.documentCode)}</span>` : ''}${item.revision ? `<span class="checksheet-badge">${escapeHTML(item.revision)}</span>` : ''}</div>
+            ${item.description ? `<p class="checksheet-description">${escapeHTML(item.description)}</p>` : ''}
+            <div class="checksheet-meta">
+                <div><strong>Measurement scope</strong>${escapeHTML(item.description || '-')}</div>
+                <div><strong>Document owner / PIC</strong>${escapeHTML(item.owner || '-')}</div>
+                <div><strong>Effective date</strong>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</div>
+                <div><strong>Next review</strong>${escapeHTML(formatChecksheetDate(item.reviewDate))}</div>
+                <div><strong>PDF</strong>${escapeHTML(item.fileName || (url ? 'Checksheet PDF' : '-'))}</div>
+                <div><strong>Last updated</strong>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</div>
+            </div>
+            <div class="checksheet-card-actions">${actions}</div>
+        </article>`;
+    }
+
+    function renderChecksheets() {
+        if (!document.getElementById('checksheetList')) return;
+        const published = checksheets.filter(item => (item.status || 'draft') === 'published');
+        const visible = getVisibleChecksheets();
+        const latest = checksheets.reduce((max, item) => Math.max(max, checksheetUpdatedAt(item)), 0);
+        document.getElementById('checksheetTotalCount').textContent = String(isAdmin ? checksheets.length : published.length);
+        document.getElementById('checksheetPublishedCount').textContent = String(published.length);
+        document.getElementById('checksheetLatestUpdate').textContent = latest ? formatChecksheetDate(latest) : '-';
+        document.getElementById('checksheetList').hidden = !isAdmin;
+        document.getElementById('checksheetViewerTableContainer').hidden = isAdmin;
+        if (isAdmin) {
+            document.getElementById('checksheetList').innerHTML = visible.length
+                ? visible.map(renderChecksheetCard).join('')
+                : '<div class="checksheet-empty">No checksheets found. Add a design checksheet to get started.</div>';
+            return;
+        }
+        document.getElementById('checksheetViewerTableBody').innerHTML = visible.length
+            ? visible.map((item, index) => {
+                const url = safeHttpsUrl(item.fileUrl);
+                return `<tr><td><strong>${index + 1}</strong></td><td>${escapeHTML(item.documentCode || '-')}</td><td>${escapeHTML(item.title || '-')}</td><td>${escapeHTML(item.revision || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</td><td>${escapeHTML(item.description || '-')}</td><td>${escapeHTML(item.owner || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</td><td>${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.fileName || 'View PDF in Google Drive')}</a>` : '-'}</td></tr>`;
+            }).join('')
+            : '<tr><td colspan="9" style="text-align:center;padding:24px;">No published checksheets found.</td></tr>';
+    }
+
+    function openChecksheetEditor(key = null) {
+        if (!isAdmin) return;
+        editingChecksheetKey = key;
+        const item = checksheets.find(value => value.fbKey === key) || {};
+        const values = {
+            checksheetTitle: item.title || '',
+            checksheetDocumentCode: item.documentCode || '',
+            checksheetRevision: item.revision || '',
+            checksheetOwner: item.owner || '',
+            checksheetEffectiveDate: item.effectiveDate || '',
+            checksheetReviewDate: item.reviewDate || '',
+            checksheetStatus: item.status || 'draft',
+            checksheetFileName: item.fileName || '',
+            checksheetFileUrl: item.fileUrl || '',
+            checksheetDescription: item.description || '',
+            checksheetKeywords: Array.isArray(item.keywords) ? item.keywords.join(', ') : (item.keywords || '')
+        };
+        Object.entries(values).forEach(([id, value]) => { document.getElementById(id).value = value; });
+        document.getElementById('checksheetEditorTitle').textContent = key ? 'Edit Design Checksheet' : 'Add Design Checksheet';
+        document.getElementById('checksheetEditorDialog').showModal();
+    }
+
+    async function saveChecksheet(event) {
+        event.preventDefault();
+        if (!isAdmin) return;
+        const title = document.getElementById('checksheetTitle').value.trim();
+        const rawUrl = document.getElementById('checksheetFileUrl').value.trim();
+        const fileUrl = rawUrl ? safeHttpsUrl(rawUrl) : '';
+        const status = document.getElementById('checksheetStatus').value;
+        if (!title) return alert('Checksheet title is required.');
+        if (rawUrl && !fileUrl) return alert('Google Drive PDF link must be a valid HTTPS URL.');
+        if (status === 'published' && !fileUrl) return alert('A published checksheet must have a Google Drive PDF link.');
+        const old = checksheets.find(item => item.fbKey === editingChecksheetKey);
+        const payload = {
+            title,
+            documentCode: document.getElementById('checksheetDocumentCode').value.trim(),
+            revision: document.getElementById('checksheetRevision').value.trim(),
+            owner: document.getElementById('checksheetOwner').value.trim(),
+            effectiveDate: document.getElementById('checksheetEffectiveDate').value,
+            reviewDate: document.getElementById('checksheetReviewDate').value,
+            status,
+            fileName: document.getElementById('checksheetFileName').value.trim() || 'Checksheet PDF',
+            fileUrl,
+            description: document.getElementById('checksheetDescription').value.trim(),
+            keywords: document.getElementById('checksheetKeywords').value.split(',').map(value => value.trim()).filter(Boolean),
+            createdAt: old?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        try {
+            if (editingChecksheetKey) await checksheetsRef.child(editingChecksheetKey).update(payload);
+            else await checksheetsRef.push(payload);
+            document.getElementById('checksheetEditorDialog').close();
+            document.getElementById('checksheetError').hidden = true;
+        } catch (error) {
+            console.error('Unable to save checksheet', error);
+            const message = document.getElementById('checksheetError');
+            message.textContent = `Checksheet could not be saved: ${error.message}`;
+            message.hidden = false;
+        }
+    }
+
+    async function deleteChecksheet(key) {
+        if (!isAdmin || !confirm('Delete this checksheet?')) return;
+        try {
+            await checksheetsRef.child(key).remove();
+        } catch (error) {
+            console.error('Unable to delete checksheet', error);
+            const message = document.getElementById('checksheetError');
+            message.textContent = `Checksheet could not be deleted: ${error.message}`;
+            message.hidden = false;
+        }
+    }
+
     document.getElementById('editProjectForm').addEventListener('submit', saveProjectEdits);
+    document.getElementById('checksheetEditorForm').addEventListener('submit', saveChecksheet);
+    document.getElementById('appMain').insertBefore(document.getElementById('webEditorPanel'), document.getElementById('designLoadPage'));
     document.getElementById('historySortBy').addEventListener('change', renderBoard);
     document.getElementById('historySortDirection').addEventListener('change', renderBoard);
     document.getElementById('historyDivisionFilter').addEventListener('change', renderBoard);
+    ['checksheetSearch', 'checksheetSort', 'checksheetStatusFilter'].forEach(id => {
+        document.getElementById(id).addEventListener('input', renderChecksheets);
+        document.getElementById(id).addEventListener('change', renderChecksheets);
+    });
     setDefaultEntryTime();
     loadWebSettings();
 
@@ -791,6 +1097,26 @@ const firebaseConfig = {
         projects = cloudProjects;
         simpanCacheLokal();
         renderBoard();
+    });
+
+    checksheetsRef.on('value', (snapshot) => {
+        checksheets = [];
+        snapshot.forEach((childSnapshot) => {
+            const item = childSnapshot.val();
+            if (item && typeof item === 'object') checksheets.push({ ...item, fbKey: childSnapshot.key });
+        });
+        try {
+            localStorage.setItem(CHECKSHEET_CACHE_KEY, JSON.stringify(checksheets));
+        } catch (error) {
+            console.error('Unable to cache checksheets locally', error);
+        }
+        document.getElementById('checksheetError').hidden = true;
+        renderChecksheets();
+    }, (error) => {
+        console.error('Unable to load checksheets', error);
+        const message = document.getElementById('checksheetError');
+        message.textContent = `Checksheets could not be loaded: ${error.message}`;
+        message.hidden = false;
     });
 
     async function aktifkanAdmin() {
@@ -821,15 +1147,19 @@ const firebaseConfig = {
         const entryTime = document.getElementById('projEntryTime').value;
         const deadline = document.getElementById('projDeadline').value;
         const notes = document.getElementById('projNotes').value.trim();
+        const rawApprovedPdfUrl = document.getElementById('projApprovedPdfUrl').value.trim();
+        const approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
 
         if (!name) { alert("Project name is required."); return; }
         if (!entryTime) { alert("System entry time is required."); return; }
+        if (rawApprovedPdfUrl && !approvedPdfUrl) { alert("Approved PDF must be a valid HTTPS link."); return; }
 
         const newProject = {
             id: Date.now() + Math.random(),
             name: name,
             divisi: divisi,
             requestType: requestType,
+            approvedPdfUrl,
             waktuMasuk: entryTime,
             deadline: deadline || '-',
             notes: notes,
@@ -843,6 +1173,7 @@ const firebaseConfig = {
         renderBoard();
 
         nameEl.value = '';
+        document.getElementById('projApprovedPdfUrl').value = '';
         document.getElementById('projNotes').value = '';
         document.getElementById('projDeadline').value = '';
         setDefaultEntryTime();
@@ -881,6 +1212,7 @@ const firebaseConfig = {
         document.getElementById('editProjectDeadline').value = toDateTimeLocalValue(project.deadline);
         document.getElementById('editProjectType').value = project.requestType || '3D Only';
         document.getElementById('editProjectStatus').value = project.status || 'queue';
+        document.getElementById('editProjectApprovedPdfUrl').value = getProjectApprovedPdf(project);
         document.getElementById('editProjectNotes').value = project.notes || '';
         document.getElementById('editProjectProgressNote').value = '';
         document.getElementById('editProjectProgressHistory').innerHTML = renderProgressNotes(project.progressNotes);
@@ -899,12 +1231,18 @@ const firebaseConfig = {
 
         const name = document.getElementById('editProjectName').value.trim();
         const entryTime = document.getElementById('editProjectEntryTime').value;
+        const rawApprovedPdfUrl = document.getElementById('editProjectApprovedPdfUrl').value.trim();
+        const approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
         if (!name) {
             alert("Project name is required.");
             return;
         }
         if (!entryTime && !project.waktuMasuk) {
             alert("System entry time is required.");
+            return;
+        }
+        if (rawApprovedPdfUrl && !approvedPdfUrl) {
+            alert("Approved PDF must be a valid HTTPS link.");
             return;
         }
 
@@ -920,6 +1258,7 @@ const firebaseConfig = {
             waktuMasuk: entryTime || project.waktuMasuk,
             deadline: document.getElementById('editProjectDeadline').value || '-',
             requestType: document.getElementById('editProjectType').value,
+            approvedPdfUrl,
             status: document.getElementById('editProjectStatus').value,
             notes: document.getElementById('editProjectNotes').value.trim(),
             progressNotes
@@ -982,7 +1321,8 @@ const firebaseConfig = {
         ]));
         const visibleProjectKeys = new Set();
         Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
-            const visibleProjects = boardExpanded[status] ? statusProjects : statusProjects.slice(0, BOARD_PREVIEW_LIMIT);
+            const previewLimit = isAdmin ? BOARD_PREVIEW_LIMIT : VIEWER_BOARD_PREVIEW_LIMIT;
+            const visibleProjects = boardExpanded[status] ? statusProjects : statusProjects.slice(0, previewLimit);
             visibleProjects.forEach(project => visibleProjectKeys.add(project.fbKey));
             statusColumns[status].countElement.innerText = statusProjects.length;
         });
@@ -1004,7 +1344,9 @@ const firebaseConfig = {
                 tombolAksi = `<div class="card-actions"><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button><button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button>${nav}</div>`;
             }
 
-            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 System Entry Time: <strong>${escapeHTML(formatDateTime(p.waktuMasuk))}</strong></div><div class="card-meta">🚨 Deadline: <strong>${escapeHTML(formatDateTime(p.deadline))}</strong></div><div class="card-meta">🧩 Type: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${p.notes ? `<div class="card-meta">📝 Notes: <div class="notes-content">${escapeHTML(p.notes)}</div></div>` : ''}${Array.isArray(p.progressNotes) && p.progressNotes.length ? `<div class="card-meta">📌 Progress Notes: <div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></div>` : ''}${tombolAksi}</div>`;
+            const approvedPdfUrl = getProjectApprovedPdf(p);
+            const approvedPdfLink = approvedPdfUrl ? `<div class="card-meta"><a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">📄 Open Approved PDF</a></div>` : '';
+            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 System Entry Time: <strong>${escapeHTML(formatDateTime(p.waktuMasuk))}</strong></div><div class="card-meta">🚨 Deadline: <strong>${escapeHTML(formatDateTime(p.deadline))}</strong></div><div class="card-meta">🧩 Type: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${approvedPdfLink}${p.notes ? `<div class="card-meta">📝 Notes: <div class="notes-content">${escapeHTML(p.notes)}</div></div>` : ''}${Array.isArray(p.progressNotes) && p.progressNotes.length ? `<div class="card-meta">📌 Progress Notes: <div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></div>` : ''}${tombolAksi}</div>`;
 
             if (visibleProjectKeys.has(p.fbKey)) {
                 statusColumns[p.status]?.element.insertAdjacentHTML('beforeend', HTMLKartu);
@@ -1013,8 +1355,11 @@ const firebaseConfig = {
         });
 
         Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
-            if (statusProjects.length <= BOARD_PREVIEW_LIMIT) return;
-            const buttonLabel = boardExpanded[status] ? 'Show latest 5' : `Show all (${statusProjects.length})`;
+            const previewLimit = isAdmin ? BOARD_PREVIEW_LIMIT : VIEWER_BOARD_PREVIEW_LIMIT;
+            if (statusProjects.length <= previewLimit) return;
+            const buttonLabel = isAdmin
+                ? (boardExpanded[status] ? 'Show latest 5' : `Show all (${statusProjects.length})`)
+                : (boardExpanded[status] ? 'Show less' : `Show all (${statusProjects.length})`);
             statusColumns[status].element.insertAdjacentHTML(
                 'beforeend',
                 `<button class="btn-action" style="width:100%; padding:8px; margin:4px 0 8px;" onclick="toggleBoardExpansion('${status}')">${buttonLabel}</button>`
@@ -1025,7 +1370,9 @@ const firebaseConfig = {
             const statusClass = p.status === 'queue' ? 'q' : (p.status === 'loading' ? 'l' : (p.status === 'review' ? 'r' : 'd'));
             const statusText = p.status === 'queue' ? '📥 Incoming' : (p.status === 'loading' ? '⏳ In Progress' : (p.status === 'review' ? '🔍 Under Review' : '✅ Done'));
             const badgeStatus = `<span class="status-pill status-${statusClass}">${statusText}</span>`;
-            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button></td>` : ''}</tr>`;
+            const approvedPdfUrl = getProjectApprovedPdf(p);
+            const approvedPdfLink = approvedPdfUrl ? `<a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">Open PDF</a>` : '-';
+            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${approvedPdfLink}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button></td>` : ''}</tr>`;
         });
 
         const historyTableContainer = document.querySelector('#tabelRiwayatUtama').parentElement;
