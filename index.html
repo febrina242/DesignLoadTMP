@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -340,6 +341,15 @@
         .login-error { padding: 10px 12px; color: #9b2c2c; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px; font-size: 13px; }
         .login-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
         .login-dialog-actions .btn { width: auto; margin: 0; }
+        .pdf-viewer-dialog { width: min(1100px, calc(100% - 32px)); height: min(88vh, 850px); max-height: 90vh; padding: 0; overflow: hidden; }
+        .pdf-viewer-shell { display: flex; flex-direction: column; height: 100%; min-height: min(70vh, 560px); }
+        .pdf-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: var(--card-bg); }
+        .pdf-viewer-header h2 { min-width: 0; margin: 0; color: var(--blue-900); font-size: 16px; overflow-wrap: anywhere; }
+        .pdf-viewer-header button { flex: 0 0 auto; }
+        .pdf-viewer-hint { margin: 0; padding: 8px 16px; color: #64748b; background: #f7f9fc; font-size: 12px; }
+        .pdf-viewer-frame { flex: 1; width: 100%; min-height: 0; border: 0; background: #e8edf3; }
+        .pdf-view-button { padding: 0; border: 0; background: transparent; color: var(--blue-700); font: inherit; text-decoration: underline; cursor: pointer; }
+        .pdf-view-button:hover { color: var(--blue-900); }
         .web-editor-section { grid-column: 1/-1; padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface-muted); }
         .web-editor-section h4 { margin: 0 0 12px; color: var(--blue-900); font-size: 14px; }
         .web-editor-section .form-grid { gap: 12px; }
@@ -508,6 +518,8 @@
             .dashboard-grid { grid-template-columns: minmax(0,1fr); }
             .masterlog-toolbar { grid-template-columns: minmax(0,1fr); }
             .appearance-customization .company-logo { width: min(var(--logo-width, 5cm), 120px); height: min(var(--logo-height, 2cm), 52px); }
+            .pdf-viewer-dialog { width: calc(100% - 16px); height: 90vh; max-height: 90vh; }
+            .pdf-viewer-shell { min-height: 80vh; }
         }
     </style>
 </head>
@@ -582,9 +594,11 @@
                 </select>
             </div>
             <div style="grid-column:1/-1;">
-                <label for="projApprovedPdfUrl" id="masterProjectPdfLabel">Approved PDF (Google Drive)</label>
-                <input type="url" id="projApprovedPdfUrl" placeholder="https://drive.google.com/file/d/..." autocomplete="url">
-                <small id="masterProjectPdfHint">Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.</small>
+                <label for="projApprovedPdfUrl" id="masterProjectPdfLabel">Approved PDF link</label>
+                <input type="url" id="projApprovedPdfUrl" placeholder="https://..." autocomplete="url">
+                <label for="projApprovedPdfFile">Or upload PDF</label>
+                <input type="file" id="projApprovedPdfFile" accept="application/pdf,.pdf">
+                <small id="masterProjectPdfHint">Upload to Firebase Storage for preview without a Google account. Configure Storage Rules to allow signed-in uploads; anyone with the generated link can view the PDF.</small>
             </div>
             <div>
                 <label id="masterProjectEntryLabel">System Entry Time</label>
@@ -599,7 +613,7 @@
                 <textarea id="projNotes" placeholder="Add any relevant details or notes"></textarea>
             </div>
         </div>
-        <button class="btn btn-submit" onclick="tambahProject()"><span id="masterAddRequestText">📥 Add Request to Queue</span></button>
+        <button class="btn btn-submit" id="addProjectButton" onclick="tambahProject()"><span id="masterAddRequestText">📥 Add Request to Queue</span></button>
     </div>
 
     <dialog id="editProjectDialog">
@@ -644,8 +658,11 @@
                     </select>
                 </div>
                 <div style="grid-column:1/-1;">
-                    <label for="editProjectApprovedPdfUrl">Approved PDF (Google Drive)</label>
-                    <input type="url" id="editProjectApprovedPdfUrl" placeholder="https://drive.google.com/file/d/..." autocomplete="url">
+                    <label for="editProjectApprovedPdfUrl">Approved PDF link</label>
+                    <input type="url" id="editProjectApprovedPdfUrl" placeholder="https://..." autocomplete="url">
+                    <label for="editProjectApprovedPdfFile">Or upload a replacement PDF</label>
+                    <input type="file" id="editProjectApprovedPdfFile" accept="application/pdf,.pdf">
+                    <small>Configure Firebase Storage Rules to allow signed-in uploads. Anyone with the generated link can view uploaded PDFs; existing files are not deleted.</small>
                 </div>
                 <div>
                     <label for="editProjectNotes">Additional Notes (Optional)</label>
@@ -938,6 +955,17 @@
                 </main>
             </div>
 
+            <dialog id="pdfViewerDialog" class="pdf-viewer-dialog" aria-labelledby="pdfViewerTitle">
+                <div class="pdf-viewer-shell">
+                    <div class="pdf-viewer-header">
+                        <h2 id="pdfViewerTitle">PDF Viewer</h2>
+                        <button type="button" class="btn btn-action" onclick="tutupPdfViewer()">Close</button>
+                    </div>
+                    <p class="pdf-viewer-hint">PDF yang diunggah ke Firebase Storage dapat dipreview tanpa akun. Link Google Drive tetap mengikuti izin akses dari Google Drive.</p>
+                    <iframe id="pdfViewerFrame" class="pdf-viewer-frame" title="PDF preview" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay"></iframe>
+                </div>
+            </dialog>
+
             <dialog id="adminLoginDialog" class="login-dialog" aria-labelledby="adminLoginTitle">
                 <form id="adminLoginForm" onsubmit="return aktifkanAdmin(event)">
                     <div>
@@ -972,7 +1000,8 @@
                         <div><label for="checksheetReviewDate">Next review date</label><input id="checksheetReviewDate" type="date"></div>
                         <div><label for="checksheetStatus">Publication status</label><select id="checksheetStatus"><option value="draft">Draft (admin only)</option><option value="published">Published (visible to viewers)</option><option value="obsolete">Obsolete (admin only)</option></select></div>
                         <div><label for="checksheetFileName">PDF display name</label><input id="checksheetFileName" maxlength="160" placeholder="e.g. Casting Checksheet.pdf"></div>
-                        <div style="grid-column:1/-1;"><label for="checksheetFileUrl">Google Drive PDF link *</label><input id="checksheetFileUrl" type="url" placeholder="https://drive.google.com/file/d/..." autocomplete="url"><small>Paste a shareable Drive link. Set access to “Anyone with the link” as Viewer.</small></div>
+                        <div><label for="checksheetFileUrl">PDF link</label><input id="checksheetFileUrl" type="url" placeholder="https://..." autocomplete="url"></div>
+                        <div><label for="checksheetFileUpload">Or upload PDF</label><input id="checksheetFileUpload" type="file" accept="application/pdf,.pdf"><small>Configure Firebase Storage Rules to allow signed-in uploads. Anyone with the generated link can view uploaded PDFs; existing files are not deleted.</small></div>
                         <div style="grid-column:1/-1;"><label for="checksheetDescription">Description / measurement scope</label><textarea id="checksheetDescription" maxlength="1500" placeholder="Describe standard drawing, measurement points and actual result fields."></textarea></div>
                         <div style="grid-column:1/-1;"><label for="checksheetKeywords">Keywords / tags</label><input id="checksheetKeywords" maxlength="300" placeholder="Comma-separated keywords"></div>
                     </div>
@@ -995,6 +1024,7 @@ const firebaseConfig = {
     const dbRef = firebase.database().ref('antrean_proyek');
     const checksheetsRef = firebase.database().ref('design_checksheets');
     const auth = firebase.auth();
+    const pdfStorageRef = firebase.storage().ref();
 
     let projects = [];
     let checksheets = [];
@@ -1082,8 +1112,8 @@ const firebaseConfig = {
             masterProjectNameLabel: 'Project Name',
             masterProjectDivisionLabel: 'Division',
             masterProjectTypeLabel: 'Type',
-            masterProjectPdfLabel: 'Approved PDF (Google Drive)',
-            masterProjectPdfHint: 'Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.',
+            masterProjectPdfLabel: 'Approved PDF link',
+            masterProjectPdfHint: 'Upload to Firebase Storage for preview without a Google account. Configure Storage Rules to allow signed-in uploads; anyone with the generated link can view the PDF.',
             masterProjectEntryLabel: 'System Entry Time',
             masterProjectDeadlineLabel: 'Deadline',
             masterProjectNotesLabel: 'Additional Notes (Optional)',
@@ -1162,11 +1192,57 @@ const firebaseConfig = {
         }
     }
 
+    async function uploadPdfToStorage(file, folder) {
+        if (!isAdmin || !auth.currentUser) throw new Error('Please sign in as an admin before uploading a PDF.');
+        if (!file || !file.name.toLowerCase().endsWith('.pdf') || (file.type && file.type !== 'application/pdf')) {
+            throw new Error('Select a valid PDF file.');
+        }
+        const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'document.pdf';
+        const storagePath = `design-load-pdfs/${folder}/${Date.now()}-${safeName}`;
+        const uploaded = await pdfStorageRef.child(storagePath).put(file, { contentType: 'application/pdf' });
+        return uploaded.ref.getDownloadURL();
+    }
+
+    function getPdfPreviewUrl(value) {
+        const safeUrl = safeHttpsUrl(value);
+        if (!safeUrl) return '';
+        const url = new URL(safeUrl);
+        if (url.hostname === 'drive.google.com' || url.hostname.endsWith('.drive.google.com')) {
+            const fileId = url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get('id');
+            if (fileId) return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+        }
+        return safeUrl;
+    }
+
+    function openPdfViewer(value, title) {
+        const previewUrl = getPdfPreviewUrl(value);
+        if (!previewUrl) return;
+        const dialog = document.getElementById('pdfViewerDialog');
+        document.getElementById('pdfViewerTitle').textContent = title || 'PDF Viewer';
+        document.getElementById('pdfViewerFrame').src = previewUrl;
+        if (!dialog.open) dialog.showModal();
+    }
+
+    function tutupPdfViewer() {
+        const dialog = document.getElementById('pdfViewerDialog');
+        document.getElementById('pdfViewerFrame').src = '';
+        if (dialog.open) dialog.close();
+    }
+
+    document.addEventListener('click', event => {
+        const button = event.target.closest('[data-pdf-url]');
+        if (button) openPdfViewer(button.dataset.pdfUrl, button.dataset.pdfTitle);
+    });
+
     function getProjectApprovedPdf(project) {
         const fieldNames = ['approvedPdfUrl', 'approvedDrawingUrl', 'approvedPdf', 'finalPdfUrl', 'approvedFileUrl'];
         const field = fieldNames.find(name => Object.prototype.hasOwnProperty.call(project, name));
         return safeHttpsUrl(field ? project[field] : '');
     }
+
+    document.getElementById('pdfViewerDialog').addEventListener('close', () => {
+        document.getElementById('pdfViewerFrame').src = '';
+    });
 
     function showAppPage(page) {
         const activePage = ['dashboard', 'master-log', 'checksheets'].includes(page) ? page : 'dashboard';
@@ -1849,7 +1925,7 @@ const firebaseConfig = {
     function renderChecksheetCard(item, settings = webSettings) {
         const status = ['published', 'draft', 'obsolete'].includes(item.status) ? item.status : 'draft';
         const url = safeHttpsUrl(item.fileUrl);
-        const actions = `${url ? `<a class="btn btn-admin" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(getPageCopy('checksheetOpenPdf', settings))}</a>` : `<span class="checksheet-badge">${escapeHTML(getPageCopy('checksheetMissingPdf', settings))}</span>`}${isAdmin ? `<button class="btn btn-admin" type="button" onclick="openChecksheetEditor('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetEdit', settings))}</button><button class="btn btn-admin" type="button" onclick="deleteChecksheet('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetDelete', settings))}</button>` : ''}`;
+        const actions = `${url ? `<button class="btn btn-admin" type="button" data-pdf-url="${escapeHTML(url)}" data-pdf-title="${escapeHTML(item.fileName || item.title || 'Checksheet PDF')}">${escapeHTML(getPageCopy('checksheetOpenPdf', settings))}</button>` : `<span class="checksheet-badge">${escapeHTML(getPageCopy('checksheetMissingPdf', settings))}</span>`}${isAdmin ? `<button class="btn btn-admin" type="button" onclick="openChecksheetEditor('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetEdit', settings))}</button><button class="btn btn-admin" type="button" onclick="deleteChecksheet('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetDelete', settings))}</button>` : ''}`;
         return `<article class="checksheet-card">
             <h3>${escapeHTML(item.title || getPageCopy('checksheetUntitled', settings))}</h3>
             <div class="checksheet-badges"><span class="checksheet-badge status-${status}">${escapeHTML(getPageCopy(`checksheetStatus${status[0].toUpperCase()}${status.slice(1)}Option`, settings))}</span>${item.documentCode ? `<span class="checksheet-badge">${escapeHTML(item.documentCode)}</span>` : ''}${item.revision ? `<span class="checksheet-badge">${escapeHTML(item.revision)}</span>` : ''}</div>
@@ -1886,7 +1962,7 @@ const firebaseConfig = {
         document.getElementById('checksheetViewerTableBody').innerHTML = visible.length
             ? visible.map((item, index) => {
                 const url = safeHttpsUrl(item.fileUrl);
-                return `<tr><td><strong>${index + 1}</strong></td><td>${escapeHTML(item.documentCode || '-')}</td><td>${escapeHTML(item.title || '-')}</td><td>${escapeHTML(item.revision || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</td><td>${escapeHTML(item.description || '-')}</td><td>${escapeHTML(item.owner || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</td><td>${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.fileName || getPageCopy('checksheetOpenPdf', settings))}</a>` : '-'}</td></tr>`;
+                return `<tr><td><strong>${index + 1}</strong></td><td>${escapeHTML(item.documentCode || '-')}</td><td>${escapeHTML(item.title || '-')}</td><td>${escapeHTML(item.revision || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</td><td>${escapeHTML(item.description || '-')}</td><td>${escapeHTML(item.owner || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</td><td>${url ? `<button class="pdf-view-button" type="button" data-pdf-url="${escapeHTML(url)}" data-pdf-title="${escapeHTML(item.fileName || item.title || 'Checksheet PDF')}">${escapeHTML(item.fileName || getPageCopy('checksheetOpenPdf', settings))}</button>` : '-'}</td></tr>`;
             }).join('')
             : `<tr><td colspan="9" style="text-align:center;padding:24px;">${escapeHTML(getPageCopy('checksheetNoPublished', settings))}</td></tr>`;
     }
@@ -1992,6 +2068,7 @@ const firebaseConfig = {
     function openChecksheetEditor(key = null) {
         if (!isAdmin) return;
         editingChecksheetKey = key;
+        document.getElementById('checksheetFileUpload').value = '';
         const item = checksheets.find(value => value.fbKey === key) || {};
         const values = {
             checksheetTitle: item.title || '',
@@ -2016,11 +2093,31 @@ const firebaseConfig = {
         if (!isAdmin) return;
         const title = document.getElementById('checksheetTitle').value.trim();
         const rawUrl = document.getElementById('checksheetFileUrl').value.trim();
-        const fileUrl = rawUrl ? safeHttpsUrl(rawUrl) : '';
+        const pdfFile = document.getElementById('checksheetFileUpload').files[0];
+        let fileUrl = rawUrl ? safeHttpsUrl(rawUrl) : '';
         const status = document.getElementById('checksheetStatus').value;
         if (!title) return alert('Checksheet title is required.');
-        if (rawUrl && !fileUrl) return alert('Google Drive PDF link must be a valid HTTPS URL.');
-        if (status === 'published' && !fileUrl) return alert('A published checksheet must have a Google Drive PDF link.');
+        if (!pdfFile && rawUrl && !fileUrl) return alert('PDF link must be a valid HTTPS URL.');
+        const submitButton = document.querySelector('#checksheetEditorForm button[type="submit"]');
+        if (pdfFile) {
+            submitButton.disabled = true;
+            try {
+                fileUrl = await uploadPdfToStorage(pdfFile, 'checksheets');
+                document.getElementById('checksheetFileUrl').value = fileUrl;
+            } catch (error) {
+                console.error('Unable to upload checksheet PDF', error);
+                const message = document.getElementById('checksheetError');
+                message.textContent = `PDF upload failed: ${error.message}. Check Firebase Storage rules and try again.`;
+                message.hidden = false;
+                submitButton.disabled = false;
+                return;
+            }
+        }
+        if (status === 'published' && !fileUrl) {
+            alert('A published checksheet must have a PDF link or uploaded PDF.');
+            submitButton.disabled = false;
+            return;
+        }
         const old = checksheets.find(item => item.fbKey === editingChecksheetKey);
         const payload = {
             title,
@@ -2030,7 +2127,7 @@ const firebaseConfig = {
             effectiveDate: document.getElementById('checksheetEffectiveDate').value,
             reviewDate: document.getElementById('checksheetReviewDate').value,
             status,
-            fileName: document.getElementById('checksheetFileName').value.trim() || 'Checksheet PDF',
+            fileName: document.getElementById('checksheetFileName').value.trim() || pdfFile?.name || 'Checksheet PDF',
             fileUrl,
             description: document.getElementById('checksheetDescription').value.trim(),
             keywords: document.getElementById('checksheetKeywords').value.split(',').map(value => value.trim()).filter(Boolean),
@@ -2041,12 +2138,15 @@ const firebaseConfig = {
             if (editingChecksheetKey) await checksheetsRef.child(editingChecksheetKey).update(payload);
             else await checksheetsRef.push(payload);
             document.getElementById('checksheetEditorDialog').close();
+            document.getElementById('checksheetFileUpload').value = '';
             document.getElementById('checksheetError').hidden = true;
         } catch (error) {
             console.error('Unable to save checksheet', error);
             const message = document.getElementById('checksheetError');
             message.textContent = `Checksheet could not be saved: ${error.message}`;
             message.hidden = false;
+        } finally {
+            submitButton.disabled = false;
         }
     }
 
@@ -2181,11 +2281,24 @@ const firebaseConfig = {
         const deadline = document.getElementById('projDeadline').value;
         const notes = document.getElementById('projNotes').value.trim();
         const rawApprovedPdfUrl = document.getElementById('projApprovedPdfUrl').value.trim();
-        const approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
+        const pdfFile = document.getElementById('projApprovedPdfFile').files[0];
 
         if (!name) { alert("Project name is required."); return; }
         if (!entryTime) { alert("System entry time is required."); return; }
-        if (rawApprovedPdfUrl && !approvedPdfUrl) { alert("Approved PDF must be a valid HTTPS link."); return; }
+        let approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
+        if (!pdfFile && rawApprovedPdfUrl && !approvedPdfUrl) { alert("Approved PDF must be a valid HTTPS link."); return; }
+        const addButton = document.getElementById('addProjectButton');
+        if (pdfFile) {
+            addButton.disabled = true;
+            try {
+                approvedPdfUrl = await uploadPdfToStorage(pdfFile, 'projects');
+            } catch (error) {
+                console.error('Unable to upload approved PDF', error);
+                alert(`PDF upload failed: ${error.message}. Check Firebase Storage rules and try again.`);
+                addButton.disabled = false;
+                return;
+            }
+        }
 
         const newProject = {
             id: Date.now() + Math.random(),
@@ -2207,6 +2320,7 @@ const firebaseConfig = {
 
         nameEl.value = '';
         document.getElementById('projApprovedPdfUrl').value = '';
+        document.getElementById('projApprovedPdfFile').value = '';
         document.getElementById('projNotes').value = '';
         document.getElementById('projDeadline').value = '';
         setDefaultEntryTime();
@@ -2218,6 +2332,8 @@ const firebaseConfig = {
             await dbRef.push(cloudData);
         } catch (error) {
             alert("The request was saved locally, but could not be synced to the server.");
+        } finally {
+            addButton.disabled = false;
         }
     }
 
@@ -2246,6 +2362,7 @@ const firebaseConfig = {
         document.getElementById('editProjectType').value = project.requestType || '3D Only';
         document.getElementById('editProjectStatus').value = project.status || 'queue';
         document.getElementById('editProjectApprovedPdfUrl').value = getProjectApprovedPdf(project);
+        document.getElementById('editProjectApprovedPdfFile').value = '';
         document.getElementById('editProjectNotes').value = project.notes || '';
         document.getElementById('editProjectProgressNote').value = '';
         document.getElementById('editProjectProgressHistory').innerHTML = renderProgressNotes(project.progressNotes);
@@ -2265,7 +2382,8 @@ const firebaseConfig = {
         const name = document.getElementById('editProjectName').value.trim();
         const entryTime = document.getElementById('editProjectEntryTime').value;
         const rawApprovedPdfUrl = document.getElementById('editProjectApprovedPdfUrl').value.trim();
-        const approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
+        const pdfFile = document.getElementById('editProjectApprovedPdfFile').files[0];
+        let approvedPdfUrl = rawApprovedPdfUrl ? safeHttpsUrl(rawApprovedPdfUrl) : '';
         if (!name) {
             alert("Project name is required.");
             return;
@@ -2274,9 +2392,21 @@ const firebaseConfig = {
             alert("System entry time is required.");
             return;
         }
-        if (rawApprovedPdfUrl && !approvedPdfUrl) {
+        if (!pdfFile && rawApprovedPdfUrl && !approvedPdfUrl) {
             alert("Approved PDF must be a valid HTTPS link.");
             return;
+        }
+        const saveButton = document.querySelector('#editProjectForm button[type="submit"]');
+        if (pdfFile) {
+            saveButton.disabled = true;
+            try {
+                approvedPdfUrl = await uploadPdfToStorage(pdfFile, 'projects');
+            } catch (error) {
+                console.error('Unable to upload approved PDF', error);
+                alert(`PDF upload failed: ${error.message}. Check Firebase Storage rules and try again.`);
+                saveButton.disabled = false;
+                return;
+            }
         }
 
         const progressNotes = Array.isArray(project.progressNotes) ? [...project.progressNotes] : [];
@@ -2301,6 +2431,8 @@ const firebaseConfig = {
         renderBoard();
         document.getElementById('editProjectDialog').close();
         editingProjectKey = null;
+        document.getElementById('editProjectApprovedPdfFile').value = '';
+        saveButton.disabled = false;
 
         if (!String(project.fbKey).startsWith('local_')) {
             try {
@@ -2334,7 +2466,7 @@ const firebaseConfig = {
             const statusText = `${statusIcons[p.status] || ''} ${getStatusLabel(p.status, settings)}`.trim();
             const badgeStatus = `<span class="status-pill status-${statusClass}">${statusText}</span>`;
             const approvedPdfUrl = getProjectApprovedPdf(p);
-            const approvedPdfLink = approvedPdfUrl ? `<a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(getPageCopy('masterPdfLink', settings))}</a>` : '-';
+            const approvedPdfLink = approvedPdfUrl ? `<button class="pdf-view-button" type="button" data-pdf-url="${escapeHTML(approvedPdfUrl)}" data-pdf-title="${escapeHTML(p.name || 'Approved PDF')}">${escapeHTML(getPageCopy('masterPdfLink', settings))}</button>` : '-';
             tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${approvedPdfLink}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">${escapeHTML(getPageCopy('masterEditButton', settings))}</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">${escapeHTML(getPageCopy('masterDeleteButton', settings))}</button></td>` : ''}</tr>`;
         });
         if (!tableBody.rows.length) {
