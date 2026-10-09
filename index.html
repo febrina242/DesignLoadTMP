@@ -8,23 +8,35 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
-            --bg-color: #edf4fc;
+            --bg-color: #f3f6fa;
             --card-bg: #ffffff;
             --text-color: #172033;
-            --blue-900: #12345a;
+            --blue-900: #142f4c;
             --blue-800: #174a7e;
-            --blue-700: #1f639f;
+            --blue-700: #2469a0;
             --blue-600: #2878b8;
-            --blue-100: #e5f1fc;
-            --blue-050: #f4f8fd;
-            --border-color: #d5e2f0;
+            --blue-100: #eaf2f9;
+            --blue-050: #f7f9fc;
+            --border-color: #dce4ed;
+            --surface-muted: #f7f9fc;
+            --muted-text: #64748b;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --content-width: 1480px;
+            --radius-lg: 12px;
+            --radius-md: 9px;
+            --radius-sm: 6px;
+            --status-queue: #7392b1;
+            --status-loading: #c69a50;
+            --status-review: #5e9a9a;
+            --status-done: #6d9a83;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--font-family);
             margin: 0;
-            padding: 20px;
+            padding: 24px;
             background-color: var(--bg-color);
             color: var(--text-color);
         }
@@ -32,31 +44,32 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1400px;
-            margin: 0 auto 20px auto;
-            background: linear-gradient(110deg, #ffffff 0%, #f4f8fd 100%);
-            padding: 15px 20px;
+            max-width: 1480px;
+            margin: 0 auto 24px auto;
+            background: #ffffff;
+            padding: 16px 22px;
             border: 1px solid var(--border-color);
-            border-top: 4px solid var(--blue-800);
-            border-radius: 10px;
-            box-shadow: 0 6px 18px rgba(18,52,90,0.09);
+            border-top: 3px solid var(--blue-800);
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(18,52,90,0.05);
         }
         .header-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
         .company-logo { width: 5cm; height: 2cm; object-fit: contain; flex: 0 0 auto; }
         .company-logo[hidden] { display: none; }
         .logo-preview { width: 5cm; height: 2cm; object-fit: contain; padding: 5px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; }
-        .header h1 { margin: 0; font-size: 24px; color: var(--blue-900); }
-        .header small { color: #53657c !important; }
+        .header h1 { margin: 0; font-size: 23px; color: var(--blue-900); letter-spacing: -0.3px; }
+        .header small { color: var(--muted-text); }
         
         .btn {
             padding: 10px 15px;
             border: none;
-            border-radius: 5px;
+            border-radius: 7px;
             cursor: pointer;
             font-weight: bold;
             font-size: 14px;
-            transition: 0.2s;
+            transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
         }
+        .btn:focus-visible, .app-nav button:focus-visible { outline: 3px solid #8ec5f2; outline-offset: 2px; }
         .btn-admin { background-color: var(--blue-800); color: white; }
         .btn-admin:hover { background-color: var(--blue-900); }
         .btn-submit { background-color: var(--blue-700); color: white; width: 100%; margin-top: 10px; }
@@ -74,8 +87,8 @@
             background: var(--card-bg);
             padding: 20px;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            box-shadow: 0 5px 16px rgba(18,52,90,0.07);
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(18,52,90,0.05);
             display: none;
         }
         .form-grid {
@@ -96,69 +109,77 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            max-width: 1400px;
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 1480px;
             margin: 0 auto;
         }
         
         .board {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }
         .column {
-            background: linear-gradient(180deg, #e4effa 0%, #f1f6fc 100%);
-            padding: 15px;
-            border: 1px solid #d2e1f0;
-            border-radius: 10px;
+            background: #f7f9fc;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 11px;
             min-height: 250px;
         }
         .column h3 {
             margin-top: 0;
             padding-bottom: 10px;
-            border-bottom: 2px solid #b8cde2;
+            border-bottom: 1px solid #dce4ed;
             color: var(--blue-900);
             display: flex;
             justify-content: space-between;
-            font-size: 16px;
+            font-size: 14px;
+            gap: 8px;
         }
-        .count-badge { background: #d4e7f8; color: var(--blue-900); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .count-badge { background: #e5edf6; color: var(--blue-900); padding: 3px 9px; border-radius: 10px; font-size: 12px; }
         
         .list-section {
             background: #ffffff;
             padding: 20px;
             border: 1px solid var(--border-color);
-            border-top: 3px solid var(--blue-700);
-            border-radius: 10px;
-            box-shadow: 0 7px 20px rgba(18,52,90,0.06);
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(18,52,90,0.05);
         }
         .list-section h3 {
             margin-top: 0;
             padding-bottom: 10px;
-            border-bottom: 2px solid #d5e2f0;
+            border-bottom: 1px solid #e5ebf1;
             color: var(--blue-900);
             font-size: 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         
         .card {
             background: var(--card-bg);
             padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            box-shadow: 0 3px 10px rgba(18,52,90,0.08);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 7px rgba(18,52,90,0.06);
             position: relative;
             border-left: 5px solid var(--blue-700);
             transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(18,52,90,0.12); }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(18,52,90,0.10); }
         .card.divisi-md { border-left-color: #2878b8; }
         .card.divisi-rd { border-left-color: #dd6b20; }
         .card.divisi-cd { border-left-color: #319795; }
         
-        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; word-break: break-all; color: var(--blue-900); }
+        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; overflow-wrap: anywhere; color: var(--blue-900); }
         .card-meta { font-size: 11px; color: #718096; margin-bottom: 4px; }
+        .deadline-badge { display: inline-block; margin-left: 5px; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+        .deadline-overdue { background: #fee2e2; color: #991b1b; }
+        .deadline-today { background: #fff4d6; color: #845b00; }
+        .deadline-soon { background: #fff7ed; color: #9a3412; }
         .notes-content {
             display: block;
             max-height: 80px;
@@ -203,24 +224,92 @@
         .table-container thead th { position: sticky; top: 0; z-index: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 950px; }
         th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
-        th { background-color: var(--blue-900); color: #ffffff; }
+        th { background-color: #f1f5f9; color: var(--blue-900); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; }
         tr:nth-child(even) { background-color: var(--blue-050); }
+        tbody tr:hover { background-color: #eef5fb; }
         
         .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; }
         .status-q { background: #e2e8f0; color: #4a5568; }
         .status-l { background: #feebc8; color: #c05621; }
         .status-r { background: #ebf8ff; color: #2b6cb0; }
         .status-d { background: #c6f6d5; color: #22543d; }
-        .app-shell { display: grid; grid-template-columns: 3.5cm minmax(0,1fr); gap: 18px; max-width: 1400px; margin: 0 auto; align-items: start; }
-        .app-nav { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 20px; padding: 6px; background: #dce9f6; border: 1px solid var(--border-color); border-radius: 9px; }
-        .app-nav button { width: 100%; padding: 10px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--blue-900); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
-        .app-nav button[aria-current="page"] { color: #fff; background: var(--blue-800); border-color: var(--blue-900); box-shadow: 0 2px 6px rgba(18,52,90,.2); }
+        .app-shell { display: grid; grid-template-columns: 208px minmax(0,1fr); gap: 24px; max-width: 1480px; margin: 0 auto; align-items: start; }
+        .app-nav { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 24px; padding: 10px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 14px rgba(18,52,90,.05); }
+        .app-nav button { width: 100%; padding: 11px 12px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #53657c; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; text-align: left; transition: color .18s ease, background-color .18s ease; }
+        .app-nav button:hover:not([aria-current="page"]) { color: var(--blue-900); background: #f4f7fa; }
+        .app-nav button[aria-current="page"] { color: #fff; background: var(--blue-800); border-color: var(--blue-900); box-shadow: 0 2px 5px rgba(18,52,90,.14); }
+        .app-nav .settings-toggle[aria-expanded="true"] { color: var(--blue-900); background: var(--blue-100); border-color: var(--border-color); }
+        .app-nav .settings-toggle { margin-top: 8px; border-top: 1px solid #e5ebf1; border-radius: 0 0 7px 7px; }
+        .settings-subnav { display: grid; gap: 5px; padding: 3px 0 0 10px; }
+        .settings-subnav[hidden] { display: none; }
+        .app-nav .settings-subnav button { font-size: 12px; }
+        .settings-subnav button[hidden] { display: none; }
         .app-main { min-width: 0; }
+        .app-page { display: grid; gap: 18px; min-width: 0; }
+        .main-layout, .list-section, .table-container { min-width: 0; }
+        .app-page > .main-layout { gap: 18px; }
+        .main-layout > .list-section { order: 1; }
+        .main-layout > .board-toolbar { order: 2; }
+        .main-layout > .board { order: 3; }
+        .board { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; min-width: 0; }
+        .board-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 11px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 10px; }
+        .board-toolbar label { margin: 0; }
+        .board-toolbar select { width: auto; min-width: 220px; }
+        .main-layout > .list-section { order: 1; }
+        .main-layout > .board { order: 2; }
         .app-page[hidden], [hidden] { display: none !important; }
         .checksheet-intro, .checksheet-summary, .checksheet-toolbar { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 5px 16px rgba(18,52,90,.06); }
         .checksheet-intro { padding: 22px; margin-bottom: 16px; border-top: 3px solid var(--blue-700); }
         .checksheet-intro h2 { margin: 0 0 6px; color: var(--blue-900); }
         .checksheet-intro p { margin: 0; color: #53657c; }
+        .dashboard-intro, .dashboard-panel { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 14px rgba(18,52,90,.05); }
+        .dashboard-intro { padding: 20px 22px; border-top: 3px solid var(--blue-700); }
+        .dashboard-intro h2 { margin: 0 0 5px; color: var(--blue-900); }
+        .dashboard-intro p { margin: 0; color: #64748b; }
+        .dashboard-total { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; background: var(--blue-100); border-radius: 8px; color: var(--blue-900); font-size: 12px; font-weight: 700; }
+        .dashboard-reminders-panel { border-left: 3px solid #d3a04c; }
+        .dashboard-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 11px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 9px; }
+        .dashboard-toolbar label { margin: 0; }
+        .dashboard-toolbar select { width: auto; min-width: 220px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+        .dashboard-panel { min-width: 0; padding: 18px; }
+        .dashboard-panel h3 { margin: 0 0 14px; color: var(--blue-900); font-size: 15px; }
+        .dashboard-reminders { display: grid; gap: 9px; }
+        .dashboard-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; background: var(--blue-050); border: 1px solid #e7edf4; border-radius: 8px; min-width: 0; }
+        .dashboard-project-info { min-width: 0; }
+        .dashboard-project-info strong, .dashboard-project-info span { display: block; overflow-wrap: anywhere; }
+        .dashboard-project-info strong { color: var(--blue-900); font-size: 13px; }
+        .dashboard-project-info span { margin-top: 3px; color: #64748b; font-size: 11px; }
+        .dashboard-status-card { min-width: 0; padding: 16px; background: #fff; border: 1px solid var(--border-color); border-top: 3px solid #7392b1; border-radius: 11px; box-shadow: 0 4px 14px rgba(18,52,90,.04); transition: box-shadow .18s ease, transform .18s ease; }
+        .dashboard-status-card:hover { transform: translateY(-2px); box-shadow: 0 7px 17px rgba(18,52,90,.08); }
+        .dashboard-status-card.status-loading { border-top-color: #c69a50; }
+        .dashboard-status-card.status-review { border-top-color: #5e9a9a; }
+        .dashboard-status-card.status-done { border-top-color: #6d9a83; }
+        .dashboard-status-card.status-queue .dashboard-status-count { background: #edf2f7; color: #435f7b; }
+        .dashboard-status-card.status-loading .dashboard-status-count { background: #f7f1e5; color: #80642e; }
+        .dashboard-status-card.status-review .dashboard-status-count { background: #eaf3f3; color: #356f70; }
+        .dashboard-status-card.status-done .dashboard-status-count { background: #edf4ef; color: #476b56; }
+        .dashboard-status-card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 11px; border-bottom: 1px solid #e8edf3; }
+        .dashboard-status-card-header h3 { margin: 0; color: var(--blue-900); font-size: 14px; }
+        .dashboard-status-count { min-width: 28px; padding: 4px 8px; border-radius: 14px; background: var(--blue-100); color: var(--blue-900); text-align: center; font-size: 12px; font-weight: 700; }
+        .dashboard-status-projects { display: grid; gap: 8px; margin: 10px 0; }
+        .dashboard-status-project { min-width: 0; padding: 8px 9px; background: #f7f9fc; border: 1px solid #edf1f5; border-radius: 7px; }
+        .status-loading .dashboard-status-project { background: #fbf9f4; }
+        .status-review .dashboard-status-project { background: #f5f9f9; }
+        .status-done .dashboard-status-project { background: #f6f9f6; }
+        .dashboard-status-project strong { display: block; color: var(--blue-900); font-size: 12px; overflow-wrap: anywhere; }
+        .dashboard-status-project span { display: block; margin-top: 3px; color: #64748b; font-size: 10px; }
+        .dashboard-status-project .deadline-badge { display: inline-block; margin-top: 0; }
+        .dashboard-status-empty { margin: 12px 0; color: #64748b; font-size: 12px; }
+        .dashboard-status-link { width: 100%; padding: 7px 9px; border: 1px solid #d6e3f0; border-radius: 6px; background: #f5f9fd; color: var(--blue-800); font: inherit; font-size: 11px; font-weight: 700; text-align: center; cursor: pointer; }
+        .dashboard-status-link:hover { background: #eaf2f9; }
+        .dashboard-empty { padding: 18px; color: #64748b; text-align: center; background: #f7f9fc; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 13px; }
+        .dashboard-reminder .deadline-badge { flex: 0 0 auto; margin-left: 0; }
+        .masterlog-toolbar { display: grid; grid-template-columns: minmax(220px,2fr) repeat(4,minmax(130px,1fr)); align-items: end; gap: 12px; padding: 15px; margin: 12px 0; background: var(--blue-050); border: 1px solid #e5ebf1; border-radius: 9px; }
+        .masterlog-toolbar > div { min-width: 0; }
+        .masterlog-toolbar label { margin-bottom: 5px; }
+        .masterlog-toolbar input, .masterlog-toolbar select { min-width: 0; }
+        .masterlog-empty { padding: 24px; text-align: center; color: #64748b; }
         .checksheet-scope { display: inline-block; margin-top: 12px; padding: 6px 10px; color: var(--blue-900); background: var(--blue-100); border-radius: 6px; font-size: 12px; font-weight: 700; }
         .checksheet-summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; padding: 14px; margin-bottom: 16px; }
         .checksheet-stat { padding: 12px; background: var(--blue-050); border-radius: 7px; }
@@ -244,15 +333,181 @@
         .checksheet-card-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
         .checksheet-empty { grid-column: 1/-1; padding: 28px; text-align: center; color: #64748b; background: #fff; border: 1px dashed #b8cde2; border-radius: 9px; }
         .checksheet-error { color: #9b2c2c; background: #fff5f5; border: 1px solid #feb2b2; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
-        @media (max-width: 760px) { .app-shell { grid-template-columns: minmax(0,1fr); gap: 12px; } .app-nav { position: static; flex-direction: row; } .app-nav button { flex: 1; text-align: center; } }
+        .login-dialog { width: min(420px, calc(100% - 40px)); }
+        .login-dialog h2 { margin: 0 0 6px; color: var(--blue-900); }
+        .login-dialog p { margin: 0 0 18px; color: #64748b; font-size: 13px; }
+        .login-dialog form { display: grid; gap: 14px; }
+        .login-error { padding: 10px 12px; color: #9b2c2c; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px; font-size: 13px; }
+        .login-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .login-dialog-actions .btn { width: auto; margin: 0; }
+        .web-editor-section { grid-column: 1/-1; padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface-muted); }
+        .web-editor-section h4 { margin: 0 0 12px; color: var(--blue-900); font-size: 14px; }
+        .web-editor-section .form-grid { gap: 12px; }
+        .web-editor-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .web-editor-actions .btn { width: auto; margin: 0; }
+        .color-setting { display: grid; grid-template-columns: 1fr 52px; align-items: center; gap: 8px; }
+        .color-setting input[type="color"] { width: 52px; height: 36px; padding: 3px; }
+        .appearance-customization .header,
+        .appearance-customization .admin-panel,
+        .appearance-customization .list-section,
+        .appearance-customization .app-nav,
+        .appearance-customization .board-toolbar,
+        .appearance-customization .checksheet-intro,
+        .appearance-customization .checksheet-summary,
+        .appearance-customization .checksheet-toolbar,
+        .appearance-customization .checksheet-card,
+        .appearance-customization .dashboard-intro,
+        .appearance-customization .dashboard-panel,
+        .appearance-customization .dashboard-status-card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+        .appearance-customization .header,
+        .appearance-customization .app-shell,
+        .appearance-customization .main-layout,
+        .appearance-customization .admin-panel {
+            max-width: var(--content-width);
+        }
+        .appearance-customization .app-shell { grid-template-columns: var(--nav-width, 208px) minmax(0,1fr); }
+        .appearance-customization .company-logo { width: var(--logo-width, 5cm); height: var(--logo-height, 2cm); }
+        .appearance-customization .header { border-top-color: var(--blue-800); }
+        .appearance-customization .header h1,
+        .appearance-customization .header h2,
+        .appearance-customization .app-nav button[aria-current="page"],
+        .appearance-customization .list-section h3,
+        .appearance-customization .dashboard-intro h2,
+        .appearance-customization .dashboard-panel h3,
+        .appearance-customization .checksheet-intro h2,
+        .appearance-customization .checksheet-card h3 {
+            color: var(--blue-900);
+        }
+        .appearance-customization .app-nav button[aria-current="page"],
+        .appearance-customization .btn-admin,
+        .appearance-customization .btn-submit {
+            background-color: var(--blue-800);
+        }
+        .appearance-customization .board-toolbar,
+        .appearance-customization .masterlog-toolbar,
+        .appearance-customization .column,
+        .appearance-customization .checksheet-stat,
+        .appearance-customization .dashboard-status-project,
+        .appearance-customization .dashboard-empty {
+            background-color: var(--surface-muted);
+        }
+        .appearance-customization input,
+        .appearance-customization select,
+        .appearance-customization textarea,
+        .appearance-customization th,
+        .appearance-customization td {
+            border-color: var(--border-color);
+        }
+        .appearance-customization th { background-color: var(--surface-muted); }
+        .appearance-customization .dashboard-status-project strong,
+        .appearance-customization .checksheet-stat strong { color: var(--blue-900); }
+        .appearance-customization label,
+        .appearance-customization .header small,
+        .appearance-customization .dashboard-intro p,
+        .appearance-customization .dashboard-status-project span,
+        .appearance-customization .dashboard-empty,
+        .appearance-customization .dashboard-status-empty,
+        .appearance-customization .dashboard-project-info span,
+        .appearance-customization .checksheet-intro p,
+        .appearance-customization .checksheet-description,
+        .appearance-customization .checksheet-meta div,
+        .appearance-customization .checksheet-stat span,
+        .appearance-customization .checksheet-empty,
+        .appearance-customization .login-dialog p,
+        .appearance-customization .card-meta,
+        .appearance-customization .progress-note-date,
+        .appearance-customization .masterlog-empty {
+            color: var(--muted-text);
+        }
+        .appearance-customization .dashboard-status-card.status-queue { border-top-color: var(--status-queue); }
+        .appearance-customization .dashboard-status-card.status-loading { border-top-color: var(--status-loading); }
+        .appearance-customization .dashboard-status-card.status-review { border-top-color: var(--status-review); }
+        .appearance-customization .dashboard-status-card.status-done { border-top-color: var(--status-done); }
+        .appearance-customization .dashboard-status-card.status-queue .dashboard-status-count { background: color-mix(in srgb, var(--status-queue) 15%, white); color: var(--status-queue); }
+        .appearance-customization .dashboard-status-card.status-loading .dashboard-status-count { background: color-mix(in srgb, var(--status-loading) 15%, white); color: var(--status-loading); }
+        .appearance-customization .dashboard-status-card.status-review .dashboard-status-count { background: color-mix(in srgb, var(--status-review) 15%, white); color: var(--status-review); }
+        .appearance-customization .dashboard-status-card.status-done .dashboard-status-count { background: color-mix(in srgb, var(--status-done) 15%, white); color: var(--status-done); }
+        .appearance-customization[data-density="compact"] .header,
+        .appearance-customization[data-density="compact"] .admin-panel,
+        .appearance-customization[data-density="compact"] .list-section,
+        .appearance-customization[data-density="compact"] .dashboard-intro,
+        .appearance-customization[data-density="compact"] .dashboard-panel,
+        .appearance-customization[data-density="compact"] .dashboard-status-card,
+        .appearance-customization[data-density="compact"] .checksheet-intro,
+        .appearance-customization[data-density="compact"] .checksheet-summary,
+        .appearance-customization[data-density="compact"] .checksheet-toolbar,
+        .appearance-customization[data-density="compact"] .checksheet-card {
+            padding: 12px;
+        }
+        .appearance-customization[data-density="comfortable"] .card,
+        .appearance-customization[data-density="comfortable"] .checksheet-card { padding: 22px; }
+        .appearance-customization .header,
+        .appearance-customization .admin-panel,
+        .appearance-customization .list-section,
+        .appearance-customization .app-nav,
+        .appearance-customization .board-toolbar,
+        .appearance-customization .checksheet-intro,
+        .appearance-customization .checksheet-summary,
+        .appearance-customization .checksheet-toolbar,
+        .appearance-customization .checksheet-card,
+        .appearance-customization .dashboard-intro,
+        .appearance-customization .dashboard-panel,
+        .appearance-customization .dashboard-status-card,
+        .appearance-customization .card,
+        .appearance-customization .column,
+        .appearance-customization .btn,
+        .appearance-customization input,
+        .appearance-customization select,
+        .appearance-customization textarea {
+            border-radius: var(--radius-md);
+        }
+        @media (max-width: 1100px) {
+            .app-shell { grid-template-columns: 184px minmax(0,1fr); gap: 18px; }
+            .board { grid-template-columns: repeat(2, minmax(0,1fr)); }
+            .masterlog-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width: 760px) {
+            body { padding: 16px; }
+            .app-shell { grid-template-columns: minmax(0,1fr); gap: 14px; }
+            .appearance-customization .app-shell { grid-template-columns: minmax(0,1fr); }
+            .app-nav { position: relative; flex-direction: row; flex-wrap: wrap; }
+            .app-nav button { flex: 1; text-align: center; }
+            .app-nav .settings-toggle { margin-top: 0; border-top: 0; border-left: 1px solid #e5ebf1; border-radius: 7px; }
+            .settings-subnav { position: absolute; z-index: 3; top: calc(100% + 5px); right: 0; width: min(240px, 80vw); padding: 8px; background: #fff; border: 1px solid var(--border-color); border-radius: 9px; box-shadow: 0 8px 20px rgba(18,52,90,.12); }
+            .app-nav { z-index: 2; }
+            .app-page { gap: 14px; }
+            .board-toolbar { justify-content: space-between; }
+            .board-toolbar select { min-width: 0; flex: 1; }
+            .dashboard-grid { grid-template-columns: minmax(0,1fr); }
+            .dashboard-toolbar { justify-content: space-between; }
+            .dashboard-toolbar select { min-width: 0; flex: 1; }
+        }
         @media (max-width: 600px) {
             body { padding: 12px; }
-            .header { align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px; }
+            .header { align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px; margin-bottom: 14px; }
             .header-brand { gap: 10px; }
-            .company-logo { width: 5cm; height: 2cm; }
-            .logo-preview { width: 5cm; height: 2cm; }
-            .header h1 { font-size: 19px; }
-            .header > div:last-child { margin-left: auto; }
+            .company-logo, .logo-preview { width: 120px; height: 52px; }
+            .header h1 { font-size: 18px; line-height: 1.3; }
+            .app-nav { padding: 6px; }
+            .app-nav button { padding: 10px 6px; font-size: 12px; }
+            .board { grid-template-columns: minmax(0,1fr); gap: 10px; }
+            .column { min-width: 0; }
+            .column { min-height: 140px; }
+            .list-section { padding: 14px; }
+            .list-section h3 { align-items: flex-start; flex-direction: column; }
+            .list-section h3 > div { display: flex; flex-wrap: wrap; gap: 6px; }
+            .list-section h3 .btn { margin: 0; }
+            .history-sort-controls { align-items: stretch !important; }
+            .history-sort-controls select { flex: 1; min-width: 0 !important; }
+            .checksheet-toolbar .search { min-width: 100%; }
+            .dashboard-intro, .dashboard-panel, .dashboard-status-card { padding: 14px; }
+            .dashboard-grid { grid-template-columns: minmax(0,1fr); }
+            .masterlog-toolbar { grid-template-columns: minmax(0,1fr); }
+            .appearance-customization .company-logo { width: min(var(--logo-width, 5cm), 120px); height: min(var(--logo-height, 2cm), 52px); }
         }
     </style>
 </head>
@@ -267,29 +522,51 @@
                 <small>Track & Monitor Design Requests Across CD, MD, & RD</small>
             </div>
         </div>
-        <div>
-            <button class="btn btn-admin" id="btnEditWeb" onclick="bukaEditorWeb()" style="display:none; margin-right:6px;">⚙️ Edit Website</button>
-            <button class="btn btn-admin" id="btnAdminMode" onclick="aktifkanAdmin()">Admin Login</button>
-        </div>
     </div>
 
     <div class="app-shell">
         <nav class="app-nav" aria-label="Main navigation">
-            <button type="button" id="navDesignLoad" aria-current="page" onclick="showAppPage('design-load')">Design Load</button>
-            <button type="button" id="navChecksheets" onclick="showAppPage('checksheets')">Checksheet</button>
+            <button type="button" id="navDashboard" data-copy-key="navDashboard" aria-current="page" onclick="showAppPage('dashboard')">Dashboard</button>
+            <button type="button" id="navDesignLoad" data-copy-key="navMasterLog" onclick="showAppPage('master-log')">Master Log</button>
+            <button type="button" id="navChecksheets" data-copy-key="navChecksheets" onclick="showAppPage('checksheets')">Checksheet</button>
+            <button type="button" id="settingsToggle" class="settings-toggle" aria-expanded="false" aria-controls="settingsSubnav" onclick="toggleSettingsMenu()">⚙ Settings</button>
+            <div id="settingsSubnav" class="settings-subnav" hidden>
+                <button type="button" id="settingsAdminAction" onclick="bukaPengaturanAdmin()">Admin Settings</button>
+                <button type="button" id="settingsLogout" onclick="aktifkanAdmin()" hidden>Admin Logout</button>
+            </div>
         </nav>
         <main class="app-main" id="appMain">
-    <section id="designLoadPage" class="app-page">
+    <section id="dashboardPage" class="app-page" aria-labelledby="dashboardPageTitle">
+        <div class="dashboard-intro">
+            <h2 id="dashboardPageTitle">Dashboard</h2>
+            <p id="dashboardPageDescription">Overview of design requests, deadlines, and project progress.</p>
+            <span class="dashboard-total"><span id="dashboardTotalLabel" data-page-copy="dashboardTotalLabel">Total projects</span> <strong id="dashboardTotal">0</strong></span>
+        </div>
+        <section class="dashboard-panel dashboard-reminders-panel" aria-labelledby="dashboardRemindersTitle">
+            <h3 id="dashboardRemindersTitle"><span id="dashboardReminderTitleText">Deadline Reminders</span> <span id="dashboardDeadlineCount" class="count-badge">0</span></h3>
+            <div id="dashboardReminders" class="dashboard-reminders"></div>
+        </section>
+        <div class="dashboard-toolbar">
+            <label for="dashboardSortBy" id="dashboardSortLabel" data-page-copy="dashboardSortLabel">Sort projects by</label>
+            <select id="dashboardSortBy">
+                <option value="entry" id="dashboardSortEntryOption" data-page-copy="dashboardSortEntryOption">Entry date (Newest first)</option>
+                <option value="deadline" id="dashboardSortDeadlineOption" data-page-copy="dashboardSortDeadlineOption">Deadline (Soonest first)</option>
+            </select>
+        </div>
+        <div id="dashboardStatusCards" class="dashboard-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="designLoadPage" class="app-page" hidden>
     <!-- FORM INPUT -->
     <div class="admin-panel" id="adminPanel">
         <h3 style="margin-top:0; color:#2b6cb0;">Drawing Request Entry</h3>
         <div class="form-grid">
             <div>
-                <label>Project Name</label>
+                <label id="masterProjectNameLabel">Project Name</label>
                 <input type="text" id="projName" placeholder="Example: Pump Housing Redesign">
             </div>
             <div>
-                <label>Division</label>
+                <label id="masterProjectDivisionLabel">Division</label>
                 <select id="projDivisi">
                     <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
                     <option value="Rubber Division (RD)">Rubber Division (RD)</option>
@@ -297,7 +574,7 @@
                 </select>
             </div>
             <div>
-                <label>Type</label>
+                <label id="masterProjectTypeLabel">Type</label>
                 <select id="projRequestType">
                     <option value="3D Only">3D Only</option>
                     <option value="2D Only">2D Only</option>
@@ -305,24 +582,24 @@
                 </select>
             </div>
             <div style="grid-column:1/-1;">
-                <label for="projApprovedPdfUrl">Approved PDF (Google Drive)</label>
+                <label for="projApprovedPdfUrl" id="masterProjectPdfLabel">Approved PDF (Google Drive)</label>
                 <input type="url" id="projApprovedPdfUrl" placeholder="https://drive.google.com/file/d/..." autocomplete="url">
-                <small>Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.</small>
+                <small id="masterProjectPdfHint">Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.</small>
             </div>
             <div>
-                <label>System Entry Time</label>
+                <label id="masterProjectEntryLabel">System Entry Time</label>
                 <input type="datetime-local" id="projEntryTime" required>
             </div>
             <div>
-                <label>Deadline</label>
+                <label id="masterProjectDeadlineLabel">Deadline</label>
                 <input type="datetime-local" id="projDeadline">
             </div>
             <div>
-                <label>Additional Notes (Optional)</label>
+                <label id="masterProjectNotesLabel">Additional Notes (Optional)</label>
                 <textarea id="projNotes" placeholder="Add any relevant details or notes"></textarea>
             </div>
         </div>
-        <button class="btn btn-submit" onclick="tambahProject()">📥 Add Request to Queue</button>
+        <button class="btn btn-submit" onclick="tambahProject()"><span id="masterAddRequestText">📥 Add Request to Queue</span></button>
     </div>
 
     <dialog id="editProjectDialog">
@@ -392,31 +669,155 @@
 
     <!-- ADMIN EDITOR WEB -->
     <div class="admin-panel" id="webEditorPanel" style="display:none;">
-        <h3 style="margin-top:0; color:#2b6cb0;">⚙ Edit Website Appearance</h3>
+        <h3 id="webEditorHeading" style="margin-top:0; color:#2b6cb0;">⚙ Edit Website Appearance</h3>
         <div class="form-grid">
-            <div><label>Dashboard Title</label><input type="text" id="webTitle"></div>
-            <div><label>Dashboard Subtitle</label><input type="text" id="webSubtitle"></div>
-            <div>
-                <label for="webLogoInput">Company Logo</label>
-                <div class="logo-editor">
-                    <img id="webLogoPreview" class="logo-preview" alt="Logo preview" hidden>
-                    <input type="file" id="webLogoInput" accept="image/png,image/jpeg,image/webp" onchange="handleLogoSelection(event)">
-                    <button class="btn btn-action" type="button" onclick="clearSelectedLogo()">Remove Logo</button>
+            <section class="web-editor-section">
+                <h4>Brand and page content</h4>
+                <div class="form-grid">
+                    <div><label for="webTitle">Header Title</label><input type="text" id="webTitle"></div>
+                    <div><label for="webSubtitle">Header Subtitle</label><input type="text" id="webSubtitle"></div>
+                    <div><label for="webDashboardTitle">Dashboard Heading</label><input type="text" id="webDashboardTitle"></div>
+                    <div><label for="webDashboardDescription">Dashboard Description</label><input type="text" id="webDashboardDescription"></div>
+                    <div>
+                        <label for="webLogoInput">Company Logo</label>
+                        <div class="logo-editor">
+                            <img id="webLogoPreview" class="logo-preview" alt="Logo preview" hidden>
+                            <input type="file" id="webLogoInput" accept="image/png,image/jpeg,image/webp" onchange="handleLogoSelection(event)">
+                            <button class="btn btn-action" type="button" onclick="clearSelectedLogo()">Remove Logo</button>
+                        </div>
+                        <small>Choose a PNG, JPG, or WebP image. The saved logo will be shared with all users.</small>
+                    </div>
                 </div>
-                <small>Choose a PNG, JPG, or WebP image. The saved logo will be shared with all users.</small>
-            </div>
-            <div><label>Request Form Title</label><input type="text" id="webFormTitle"></div>
-            <div><label>History List Title</label><input type="text" id="webHistoryTitle"></div>
-            <div><label>Status 1 Name</label><input type="text" id="webQueueTitle"></div>
-            <div><label>Status 2 Name</label><input type="text" id="webLoadingTitle"></div>
-            <div><label>Status 3 Name</label><input type="text" id="webReviewTitle"></div>
-            <div><label>Status 4 Name</label><input type="text" id="webDoneTitle"></div>
+            </section>
+            <section class="web-editor-section">
+                <h4>Theme and layout</h4>
+                <div class="form-grid">
+                    <div><label for="webThemePreset">Color theme</label><select id="webThemePreset"><option value="navy">Professional Navy</option><option value="teal">Calm Teal</option><option value="forest">Forest Green</option><option value="warm">Warm Sand</option><option value="custom">Custom Colors</option></select></div>
+                    <div><label for="webFontFamily">Font</label><select id="webFontFamily"><option value="Segoe UI">Segoe UI</option><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option></select></div>
+                    <div><label for="webCornerStyle">Corner style</label><select id="webCornerStyle"><option value="soft">Soft</option><option value="rounded">Rounded</option><option value="square">Square</option></select></div>
+                    <div><label for="webDensity">Content spacing</label><select id="webDensity"><option value="regular">Regular</option><option value="compact">Compact</option><option value="comfortable">Comfortable</option></select></div>
+                    <div><label for="webContentWidth">Content width</label><select id="webContentWidth"><option value="1200px">Narrow</option><option value="1480px">Standard</option><option value="1720px">Wide</option></select></div>
+                    <div><label for="webNavWidth">Sidebar width</label><select id="webNavWidth"><option value="168px">Narrow</option><option value="208px">Standard</option><option value="256px">Wide</option></select></div>
+                    <div><label for="webLogoScale">Logo size</label><select id="webLogoScale"><option value="small">Small</option><option value="standard">Standard</option><option value="large">Large</option></select></div>
+                    <div><label for="webPageBackground">Page background</label><div class="color-setting"><span>Background color</span><input type="color" id="webPageBackground"></div></div>
+                    <div><label for="webSurfaceColor">Panel color</label><div class="color-setting"><span>Main surfaces</span><input type="color" id="webSurfaceColor"></div></div>
+                    <div><label for="webTextColor">Text color</label><div class="color-setting"><span>Primary text</span><input type="color" id="webTextColor"></div></div>
+                    <div><label for="webBrandColor">Brand color</label><div class="color-setting"><span>Navigation and buttons</span><input type="color" id="webBrandColor"></div></div>
+                    <div><label for="webHeadingColor">Heading color</label><div class="color-setting"><span>Titles and headings</span><input type="color" id="webHeadingColor"></div></div>
+                    <div><label for="webBorderColor">Border color</label><div class="color-setting"><span>Panel and field borders</span><input type="color" id="webBorderColor"></div></div>
+                    <div><label for="webQueueColor">Incoming accent</label><div class="color-setting"><span>Status card</span><input type="color" id="webQueueColor"></div></div>
+                    <div><label for="webLoadingColor">In Progress accent</label><div class="color-setting"><span>Status card</span><input type="color" id="webLoadingColor"></div></div>
+                    <div><label for="webReviewColor">Under Review accent</label><div class="color-setting"><span>Status card</span><input type="color" id="webReviewColor"></div></div>
+                    <div><label for="webDoneColor">Done accent</label><div class="color-setting"><span>Status card</span><input type="color" id="webDoneColor"></div></div>
+                </div>
+            </section>
+            <section class="web-editor-section">
+                <h4>Section names and status labels</h4>
+                <div class="form-grid">
+                    <div><label for="webFormTitle">Request Form Title</label><input type="text" id="webFormTitle"></div>
+                    <div><label for="webHistoryTitle">Master Log Title</label><input type="text" id="webHistoryTitle"></div>
+                    <div><label for="webDashboardReminderTitle">Deadline Reminder Title</label><input type="text" id="webDashboardReminderTitle"></div>
+                    <div><label for="webQueueTitle">Incoming Status</label><input type="text" id="webQueueTitle"></div>
+                    <div><label for="webLoadingTitle">In Progress Status</label><input type="text" id="webLoadingTitle"></div>
+                    <div><label for="webReviewTitle">Under Review Status</label><input type="text" id="webReviewTitle"></div>
+                    <div><label for="webDoneTitle">Done Status</label><input type="text" id="webDoneTitle"></div>
+                </div>
+            </section>
+            <section class="web-editor-section">
+                <h4>Dashboard text</h4>
+                <div class="form-grid">
+                    <div><label>Total projects label</label><input type="text" data-page-copy-edit="dashboardTotalLabel"></div>
+                    <div><label>Sort label</label><input type="text" data-page-copy-edit="dashboardSortLabel"></div>
+                    <div><label>Sort: entry date</label><input type="text" data-page-copy-edit="dashboardSortEntryOption"></div>
+                    <div><label>Sort: deadline</label><input type="text" data-page-copy-edit="dashboardSortDeadlineOption"></div>
+                    <div><label>Empty deadline reminder</label><input type="text" data-page-copy-edit="dashboardNoReminders"></div>
+                    <div><label>Empty status card</label><input type="text" data-page-copy-edit="dashboardNoProjects"></div>
+                    <div><label>Card link when there are more projects</label><input type="text" data-page-copy-edit="dashboardViewAll"></div>
+                    <div><label>Card link when all projects fit</label><input type="text" data-page-copy-edit="dashboardViewStatus"></div>
+                </div>
+            </section>
+            <section class="web-editor-section">
+                <h4>Master Log text</h4>
+                <div class="form-grid">
+                    <div><label>Search label</label><input type="text" data-page-copy-edit="masterSearchLabel"></div>
+                    <div><label>Search placeholder</label><input type="text" data-page-copy-edit="masterSearchPlaceholder"></div>
+                    <div><label>Status filter label</label><input type="text" data-page-copy-edit="masterStatusLabel"></div>
+                    <div><label>All statuses option</label><input type="text" data-page-copy-edit="masterStatusAllOption"></div>
+                    <div><label>Division filter label</label><input type="text" data-page-copy-edit="masterDivisionLabel"></div>
+                    <div><label>All divisions option</label><input type="text" data-page-copy-edit="masterDivisionAllOption"></div>
+                    <div><label>Sort label</label><input type="text" data-page-copy-edit="masterSortLabel"></div>
+                    <div><label>Sort by project</label><input type="text" data-page-copy-edit="masterSortNameOption"></div>
+                    <div><label>Sort by entry date</label><input type="text" data-page-copy-edit="masterSortEntryOption"></div>
+                    <div><label>Sort by deadline</label><input type="text" data-page-copy-edit="masterSortDeadlineOption"></div>
+                    <div><label>Order label</label><input type="text" data-page-copy-edit="masterOrderLabel"></div>
+                    <div><label>Ascending option</label><input type="text" data-page-copy-edit="masterOrderAscOption"></div>
+                    <div><label>Descending option</label><input type="text" data-page-copy-edit="masterOrderDescOption"></div>
+                    <div><label>Empty search results</label><input type="text" data-page-copy-edit="masterNoResults"></div>
+                    <div><label>Number column</label><input type="text" data-page-copy-edit="masterColumnNumber"></div>
+                    <div><label>Project name column</label><input type="text" data-page-copy-edit="masterColumnProject"></div>
+                    <div><label>Approved PDF column</label><input type="text" data-page-copy-edit="masterColumnPdf"></div>
+                    <div><label>Division column</label><input type="text" data-page-copy-edit="masterColumnDivision"></div>
+                    <div><label>Entry time column</label><input type="text" data-page-copy-edit="masterColumnEntry"></div>
+                    <div><label>Deadline column</label><input type="text" data-page-copy-edit="masterColumnDeadline"></div>
+                    <div><label>Type column</label><input type="text" data-page-copy-edit="masterColumnType"></div>
+                    <div><label>Notes column</label><input type="text" data-page-copy-edit="masterColumnNotes"></div>
+                    <div><label>Progress notes column</label><input type="text" data-page-copy-edit="masterColumnProgress"></div>
+                    <div><label>Status column</label><input type="text" data-page-copy-edit="masterColumnStatus"></div>
+                    <div><label>Admin actions column</label><input type="text" data-page-copy-edit="masterColumnActions"></div>
+                    <div><label>PDF link text</label><input type="text" data-page-copy-edit="masterPdfLink"></div>
+                    <div><label>Edit project button</label><input type="text" data-page-copy-edit="masterEditButton"></div>
+                    <div><label>Delete project button</label><input type="text" data-page-copy-edit="masterDeleteButton"></div>
+                    <div><label>Request form: project label</label><input type="text" data-page-copy-edit="masterProjectNameLabel"></div>
+                    <div><label>Request form: division label</label><input type="text" data-page-copy-edit="masterProjectDivisionLabel"></div>
+                    <div><label>Request form: type label</label><input type="text" data-page-copy-edit="masterProjectTypeLabel"></div>
+                    <div><label>Request form: approved PDF label</label><input type="text" data-page-copy-edit="masterProjectPdfLabel"></div>
+                    <div><label>Request form: PDF helper text</label><input type="text" data-page-copy-edit="masterProjectPdfHint"></div>
+                    <div><label>Request form: entry time label</label><input type="text" data-page-copy-edit="masterProjectEntryLabel"></div>
+                    <div><label>Request form: deadline label</label><input type="text" data-page-copy-edit="masterProjectDeadlineLabel"></div>
+                    <div><label>Request form: notes label</label><input type="text" data-page-copy-edit="masterProjectNotesLabel"></div>
+                    <div><label>Add request button</label><input type="text" data-page-copy-edit="masterAddRequestText"></div>
+                </div>
+            </section>
+            <section class="web-editor-section">
+                <h4>Checksheet text</h4>
+                <div class="form-grid">
+                    <div><label>Page title</label><input type="text" data-page-copy-edit="checksheetTitle"></div>
+                    <div style="grid-column:1/-1;"><label>Page description</label><textarea data-page-copy-edit="checksheetDescription"></textarea></div>
+                    <div><label>Scope badge</label><input type="text" data-page-copy-edit="checksheetScope"></div>
+                    <div><label>Published count label</label><input type="text" data-page-copy-edit="checksheetTotalPublished"></div>
+                    <div><label>All documents count label</label><input type="text" data-page-copy-edit="checksheetTotalAll"></div>
+                    <div><label>Published statistic label</label><input type="text" data-page-copy-edit="checksheetPublishedLabel"></div>
+                    <div><label>Latest update label</label><input type="text" data-page-copy-edit="checksheetLatestLabel"></div>
+                    <div><label>Search label</label><input type="text" data-page-copy-edit="checksheetSearchLabel"></div>
+                    <div><label>Search placeholder</label><input type="text" data-page-copy-edit="checksheetSearchPlaceholder"></div>
+                    <div><label>Sort label</label><input type="text" data-page-copy-edit="checksheetSortLabel"></div>
+                    <div><label>Recently updated option</label><input type="text" data-page-copy-edit="checksheetSortUpdatedOption"></div>
+                    <div><label>Title A-Z option</label><input type="text" data-page-copy-edit="checksheetSortTitleOption"></div>
+                    <div><label>Effective date option</label><input type="text" data-page-copy-edit="checksheetSortEffectiveOption"></div>
+                    <div><label>Status filter label</label><input type="text" data-page-copy-edit="checksheetStatusLabel"></div>
+                    <div><label>All statuses option</label><input type="text" data-page-copy-edit="checksheetStatusAllOption"></div>
+                    <div><label>Published status option</label><input type="text" data-page-copy-edit="checksheetStatusPublishedOption"></div>
+                    <div><label>Draft status option</label><input type="text" data-page-copy-edit="checksheetStatusDraftOption"></div>
+                    <div><label>Obsolete status option</label><input type="text" data-page-copy-edit="checksheetStatusObsoleteOption"></div>
+                    <div><label>Export button</label><input type="text" data-page-copy-edit="checksheetExportText"></div>
+                    <div><label>Add checksheet button</label><input type="text" data-page-copy-edit="checksheetAddText"></div>
+                    <div><label>Empty list message</label><input type="text" data-page-copy-edit="checksheetEmpty"></div>
+                    <div><label>Missing PDF label</label><input type="text" data-page-copy-edit="checksheetMissingPdf"></div>
+                    <div><label>Open PDF link text</label><input type="text" data-page-copy-edit="checksheetOpenPdf"></div>
+                    <div><label>Edit button</label><input type="text" data-page-copy-edit="checksheetEdit"></div>
+                    <div><label>Delete button</label><input type="text" data-page-copy-edit="checksheetDelete"></div>
+                    <div><label>Untitled item fallback</label><input type="text" data-page-copy-edit="checksheetUntitled"></div>
+                </div>
+            </section>
         </div>
-        <button class="btn btn-submit" id="webSettingsSave" onclick="simpanPengaturanWeb()">💾 Save Appearance Changes</button>
+        <div class="web-editor-actions">
+            <button class="btn btn-action" type="button" onclick="tutupEditorWeb()">Close settings</button>
+            <button class="btn btn-action" type="button" onclick="resetWebSettings()">Reset to defaults</button>
+            <button class="btn btn-submit" id="webSettingsSave" onclick="simpanPengaturanWeb()">💾 Save Appearance Changes</button>
+        </div>
     </div>
 
     <div class="main-layout">
-        <!-- TABEL RIWAYAT -->
         <div class="list-section">
             <h3>
                 <span><span id="historyTitleText">📋 Master Log & History List</span><span id="totalProjectCount" class="total-project-count">Total Projects: 0</span></span>
@@ -426,65 +827,65 @@
                     <button class="btn btn-excel" id="btnExportExcel" onclick="eksporKeExcel()">📥 Export All to Excel</button>
                 </div>
             </h3>
-            <div class="history-sort-controls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0;">
-                <label for="historySortBy" style="margin:0;">Sort by</label>
-                <select id="historySortBy" style="width:auto; min-width:180px;">
-                    <option value="name">Project Name</option>
-                    <option value="entry">Entry Date</option>
-                    <option value="deadline">Deadline Date</option>
-                </select>
-                <label for="historySortDirection" style="margin:0;">Order</label>
-                <select id="historySortDirection" style="width:auto; min-width:150px;">
-                    <option value="asc">Ascending</option>
-                    <option value="desc">Descending</option>
-                </select>
-                <label for="historyDivisionFilter" style="margin:0;">Division</label>
-                <select id="historyDivisionFilter" style="width:auto; min-width:220px;">
-                    <option value="all">All Divisions</option>
-                    <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
-                    <option value="Rubber Division (RD)">Rubber Division (RD)</option>
-                    <option value="Casting Division (CD)">Casting Division (CD)</option>
-                </select>
+            <div class="masterlog-toolbar">
+                <div>
+                    <label for="historySearch" id="historySearchLabel" data-page-copy="masterSearchLabel">Search projects</label>
+                    <input type="search" id="historySearch" placeholder="Project name, division, or notes..." data-page-placeholder="masterSearchPlaceholder" autocomplete="off">
+                </div>
+                <div>
+                    <label for="historyStatusFilter" id="historyStatusLabel" data-page-copy="masterStatusLabel">Status</label>
+                    <select id="historyStatusFilter">
+                        <option value="all" id="historyStatusAllOption" data-page-copy="masterStatusAllOption">All statuses</option>
+                        <option value="queue">Incoming</option>
+                        <option value="loading">In Progress</option>
+                        <option value="review">Under Review</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="historyDivisionFilter" id="historyDivisionLabel" data-page-copy="masterDivisionLabel">Division</label>
+                    <select id="historyDivisionFilter">
+                        <option value="all" id="historyDivisionAllOption" data-page-copy="masterDivisionAllOption">All divisions</option>
+                        <option value="Mechanical Division (MD)">Mechanical Division (MD)</option>
+                        <option value="Rubber Division (RD)">Rubber Division (RD)</option>
+                        <option value="Casting Division (CD)">Casting Division (CD)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="historySortBy" id="historySortLabel" data-page-copy="masterSortLabel">Sort by</label>
+                    <select id="historySortBy">
+                        <option value="name" id="historySortNameOption" data-page-copy="masterSortNameOption">Project name</option>
+                        <option value="entry" id="historySortEntryOption" data-page-copy="masterSortEntryOption">Entry date</option>
+                        <option value="deadline" id="historySortDeadlineOption" data-page-copy="masterSortDeadlineOption">Deadline</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="historySortDirection" id="historyOrderLabel" data-page-copy="masterOrderLabel">Order</label>
+                    <select id="historySortDirection">
+                        <option value="asc" id="historyOrderAscOption" data-page-copy="masterOrderAscOption">Ascending</option>
+                        <option value="desc" id="historyOrderDescOption" data-page-copy="masterOrderDescOption">Descending</option>
+                    </select>
+                </div>
             </div>
             <div class="table-container">
                 <table id="tabelRiwayatUtama">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;">No</th>
-                            <th>Project Name</th>
-                            <th>Approved PDF</th>
-                            <th>Division</th>
-                            <th>System Entry Time</th>
-                            <th>Deadline</th>
-                            <th>Type</th>
-                            <th>Notes</th>
-                            <th>Progress Notes</th>
-                            <th>Process Status</th>
-                            <th id="th-aksi" style="display: none; width: 180px;">Admin Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableHistoryBody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Board statuses belong only to the Design Load page. -->
-        <div class="board">
-            <div class="column">
-                <h3>📥 Incoming <span class="count-badge" id="count-q">0</span></h3>
-                <div id="col-queue"></div>
-            </div>
-            <div class="column">
-                <h3>⏳ In Progress <span class="count-badge" id="count-l">0</span></h3>
-                <div id="col-loading"></div>
-            </div>
-            <div class="column">
-                <h3>🔍 Under Review <span class="count-badge" id="count-r">0</span></h3>
-                <div id="col-review"></div>
-            </div>
-            <div class="column">
-                <h3>✅ Approved (Done) <span class="count-badge" id="count-d">0</span></h3>
-                <div id="col-done"></div>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;" id="historyColumnNumber" data-page-copy="masterColumnNumber">No</th>
+                                <th id="historyColumnProject" data-page-copy="masterColumnProject">Project Name</th>
+                                <th id="historyColumnPdf" data-page-copy="masterColumnPdf">Approved PDF</th>
+                                <th id="historyColumnDivision" data-page-copy="masterColumnDivision">Division</th>
+                                <th id="historyColumnEntry" data-page-copy="masterColumnEntry">System Entry Time</th>
+                                <th id="historyColumnDeadline" data-page-copy="masterColumnDeadline">Deadline</th>
+                                <th id="historyColumnType" data-page-copy="masterColumnType">Type</th>
+                                <th id="historyColumnNotes" data-page-copy="masterColumnNotes">Notes</th>
+                                <th id="historyColumnProgress" data-page-copy="masterColumnProgress">Progress Notes</th>
+                                <th id="historyColumnStatus" data-page-copy="masterColumnStatus">Process Status</th>
+                                <th id="th-aksi" style="display: none; width: 180px;">Admin Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableHistoryBody"></tbody>
+                    </table>
             </div>
         </div>
     </section>
@@ -492,43 +893,44 @@
             <section id="checksheetsPage" class="app-page" hidden aria-labelledby="checksheetPageTitle">
                 <div class="checksheet-intro">
                     <h2 id="checksheetPageTitle">Design Checksheet</h2>
-                    <p>Engineering checksheets for the Casting Division, containing standard drawings, measurement points, and fields to record actual measurement results.</p>
-                    <span class="checksheet-scope">Engineering · Casting Division (CD)</span>
+                    <p id="checksheetPageDescription">Engineering checksheets for the Casting Division, containing standard drawings, measurement points, and fields to record actual measurement results.</p>
+                    <span class="checksheet-scope" id="checksheetScope">Engineering · Casting Division (CD)</span>
                 </div>
                 <div class="checksheet-summary" aria-live="polite">
                     <div class="checksheet-stat"><strong id="checksheetTotalCount">0</strong><span id="checksheetTotalLabel">Published checksheets</span></div>
-                    <div class="checksheet-stat" id="checksheetPublishedStat" hidden><strong id="checksheetPublishedCount">0</strong><span>Published</span></div>
-                    <div class="checksheet-stat"><strong id="checksheetLatestUpdate">-</strong><span>Latest update</span></div>
+                    <div class="checksheet-stat" id="checksheetPublishedStat" hidden><strong id="checksheetPublishedCount">0</strong><span id="checksheetPublishedLabel">Published</span></div>
+                    <div class="checksheet-stat"><strong id="checksheetLatestUpdate">-</strong><span id="checksheetLatestLabel">Latest update</span></div>
                 </div>
                 <div id="checksheetError" class="checksheet-error" role="alert" hidden></div>
                 <div class="checksheet-toolbar">
                     <div class="search">
-                        <label for="checksheetSearch">Search checksheets</label>
-                        <input type="search" id="checksheetSearch" placeholder="Search title, code, owner, or keywords..." autocomplete="off">
+                        <label for="checksheetSearch" id="checksheetSearchLabel" data-page-copy="checksheetSearchLabel">Search checksheets</label>
+                        <input type="search" id="checksheetSearch" placeholder="Search title, code, owner, or keywords..." data-page-placeholder="checksheetSearchPlaceholder" autocomplete="off">
                     </div>
                     <div>
-                        <label for="checksheetSort">Sort by</label>
+                        <label for="checksheetSort" id="checksheetSortLabel" data-page-copy="checksheetSortLabel">Sort by</label>
                         <select id="checksheetSort">
-                            <option value="updated">Recently updated</option>
-                            <option value="title">Title A-Z</option>
-                            <option value="effective">Effective date</option>
+                            <option value="updated" id="checksheetSortUpdatedOption" data-page-copy="checksheetSortUpdatedOption">Recently updated</option>
+                            <option value="title" id="checksheetSortTitleOption" data-page-copy="checksheetSortTitleOption">Title A-Z</option>
+                            <option value="effective" id="checksheetSortEffectiveOption" data-page-copy="checksheetSortEffectiveOption">Effective date</option>
                         </select>
                     </div>
                     <div id="checksheetStatusFilterWrap" hidden>
-                        <label for="checksheetStatusFilter">Document status</label>
+                        <label for="checksheetStatusFilter" id="checksheetStatusLabel" data-page-copy="checksheetStatusLabel">Document status</label>
                         <select id="checksheetStatusFilter">
-                            <option value="all">All statuses</option>
-                            <option value="published">Published</option>
-                            <option value="draft">Draft</option>
-                            <option value="obsolete">Obsolete</option>
+                            <option value="all" id="checksheetStatusAllOption" data-page-copy="checksheetStatusAllOption">All statuses</option>
+                            <option value="published" id="checksheetStatusPublishedOption" data-page-copy="checksheetStatusPublishedOption">Published</option>
+                            <option value="draft" id="checksheetStatusDraftOption" data-page-copy="checksheetStatusDraftOption">Draft</option>
+                            <option value="obsolete" id="checksheetStatusObsoleteOption" data-page-copy="checksheetStatusObsoleteOption">Obsolete</option>
                         </select>
                     </div>
-                    <button class="btn btn-submit" id="addChecksheetButton" type="button" onclick="openChecksheetEditor()" hidden>＋ Add Design Checksheet</button>
+                    <button class="btn btn-excel" id="btnExportChecksheets" type="button" onclick="eksporChecksheetsKeExcel()" hidden><span id="checksheetExportText">📥 Export Checksheets to Excel</span></button>
+                    <button class="btn btn-submit" id="addChecksheetButton" type="button" onclick="openChecksheetEditor()" hidden><span id="checksheetAddText">＋ Add Design Checksheet</span></button>
                 </div>
                 <div id="checksheetList" class="checksheet-list" aria-live="polite"></div>
                 <div id="checksheetViewerTableContainer" class="table-container" hidden>
                     <table id="checksheetViewerTable">
-                        <thead><tr><th>No</th><th>Document Code</th><th>Checksheet Name</th><th>Revision</th><th>Effective Date</th><th>Measurement Scope</th><th>Document Owner / PIC</th><th>Last Updated</th><th>File</th></tr></thead>
+                        <thead><tr><th id="checksheetColumnNumber">No</th><th id="checksheetColumnCode">Document Code</th><th id="checksheetColumnTitle">Checksheet Name</th><th id="checksheetColumnRevision">Revision</th><th id="checksheetColumnEffective">Effective Date</th><th id="checksheetColumnScope">Measurement Scope</th><th id="checksheetColumnOwner">Document Owner / PIC</th><th id="checksheetColumnUpdated">Last Updated</th><th id="checksheetColumnFile">File</th></tr></thead>
                         <tbody id="checksheetViewerTableBody"></tbody>
                     </table>
                 </div>
@@ -536,7 +938,29 @@
                 </main>
             </div>
 
-            <dialog id="checksheetEditorDialog">
+            <dialog id="adminLoginDialog" class="login-dialog" aria-labelledby="adminLoginTitle">
+                <form id="adminLoginForm" onsubmit="return aktifkanAdmin(event)">
+                    <div>
+                        <h2 id="adminLoginTitle">Admin Settings</h2>
+                        <p>Masuk dengan akun admin untuk mengelola proyek dan pengaturan dashboard.</p>
+                    </div>
+                    <div>
+                        <label for="adminEmail">Email</label>
+                        <input type="email" id="adminEmail" autocomplete="username" required>
+                    </div>
+                    <div>
+                        <label for="adminPassword">Password</label>
+                        <input type="password" id="adminPassword" autocomplete="current-password" required>
+                    </div>
+                    <div id="adminLoginError" class="login-error" role="alert" hidden></div>
+                    <div class="login-dialog-actions">
+                        <button class="btn btn-action" type="button" onclick="document.getElementById('adminLoginDialog').close()">Cancel</button>
+                        <button class="btn btn-admin" id="adminLoginSubmit" type="submit">Login</button>
+                    </div>
+                </form>
+            </dialog>
+
+                    <dialog id="checksheetEditorDialog">
                 <form id="checksheetEditorForm">
                     <h2 id="checksheetEditorTitle" style="margin-top:0; color:#2b6cb0;">Add Design Checksheet</h2>
                     <div class="form-grid">
@@ -577,9 +1001,7 @@ const firebaseConfig = {
     let isAdmin = false;
     let editingProjectKey = null;
     let editingChecksheetKey = null;
-    const BOARD_PREVIEW_LIMIT = 5;
-    const VIEWER_BOARD_PREVIEW_LIMIT = 2;
-    const boardExpanded = { queue: false, loading: false, review: false, done: false };
+    let activeAppPage = 'dashboard';
 
     const LOCAL_STORAGE_KEY = 'papan_antrean_local_cache_v2';
     const CHECKSHEET_CACHE_KEY = 'design_checksheets_cache_v1';
@@ -591,18 +1013,135 @@ const firebaseConfig = {
     const DEFAULT_WEB_SETTINGS = {
         title: 'Design Load — PT Tozen Mechanical Product',
         subtitle: 'Track & Monitor Design Requests Across CD, MD, & RD',
+        dashboardTitle: 'Dashboard',
+        dashboardDescription: 'Overview of design requests, deadlines, and project progress.',
+        reminderTitle: 'Deadline Reminders',
         formTitle: 'Drawing Request Entry',
         historyTitle: '📋 Master Log & History List',
-        queueTitle: '📥 Incoming',
-        loadingTitle: '⏳ In Progress',
-        reviewTitle: '🔍 Under Review',
-        doneTitle: '✅ Approved (Done)'
+        queueTitle: 'Incoming',
+        loadingTitle: 'In Progress',
+        reviewTitle: 'Under Review',
+        doneTitle: 'Done',
+        themePreset: 'navy',
+        pageBackground: '#f3f6fa',
+        surfaceColor: '#ffffff',
+        textColor: '#172033',
+        brandColor: '#174a7e',
+        headingColor: '#142f4c',
+        borderColor: '#dce4ed',
+        fontFamily: 'Segoe UI',
+        cornerStyle: 'soft',
+        density: 'regular',
+        contentWidth: '1480px',
+        queueColor: '#7392b1',
+        loadingColor: '#c69a50',
+        reviewColor: '#5e9a9a',
+        doneColor: '#6d9a83',
+        navWidth: '208px',
+        logoScale: 'standard',
+        pageCopy: {
+            navDashboard: 'Dashboard',
+            navMasterLog: 'Master Log',
+            navChecksheets: 'Checksheet',
+            dashboardTotalLabel: 'Total projects',
+            dashboardSortLabel: 'Sort projects by',
+            dashboardSortEntryOption: 'Entry date (Newest first)',
+            dashboardSortDeadlineOption: 'Deadline (Soonest first)',
+            dashboardNoReminders: 'No overdue or upcoming deadlines in the next 3 days.',
+            dashboardNoProjects: 'No projects in this status.',
+            dashboardViewAll: 'View all {count} projects',
+            dashboardViewStatus: 'View {status} projects',
+            masterSearchLabel: 'Search projects',
+            masterSearchPlaceholder: 'Project name, division, or notes...',
+            masterStatusLabel: 'Status',
+            masterStatusAllOption: 'All statuses',
+            masterDivisionLabel: 'Division',
+            masterDivisionAllOption: 'All divisions',
+            masterSortLabel: 'Sort by',
+            masterSortNameOption: 'Project name',
+            masterSortEntryOption: 'Entry date',
+            masterSortDeadlineOption: 'Deadline',
+            masterOrderLabel: 'Order',
+            masterOrderAscOption: 'Ascending',
+            masterOrderDescOption: 'Descending',
+            masterNoResults: 'No projects match the current search and filters.',
+            masterColumnNumber: 'No',
+            masterColumnProject: 'Project Name',
+            masterColumnPdf: 'Approved PDF',
+            masterColumnDivision: 'Division',
+            masterColumnEntry: 'System Entry Time',
+            masterColumnDeadline: 'Deadline',
+            masterColumnType: 'Type',
+            masterColumnNotes: 'Notes',
+            masterColumnProgress: 'Progress Notes',
+            masterColumnStatus: 'Process Status',
+            masterColumnActions: 'Admin Actions',
+            masterPdfLink: 'Open PDF',
+            masterEditButton: '✏️ Edit Details',
+            masterDeleteButton: '🗑️ Delete',
+            masterProjectNameLabel: 'Project Name',
+            masterProjectDivisionLabel: 'Division',
+            masterProjectTypeLabel: 'Type',
+            masterProjectPdfLabel: 'Approved PDF (Google Drive)',
+            masterProjectPdfHint: 'Link to the approved final drawing PDF. Share the Google Drive file with “Anyone with the link” as Viewer.',
+            masterProjectEntryLabel: 'System Entry Time',
+            masterProjectDeadlineLabel: 'Deadline',
+            masterProjectNotesLabel: 'Additional Notes (Optional)',
+            masterAddRequestText: '📥 Add Request to Queue',
+            checksheetTitle: 'Design Checksheet',
+            checksheetDescription: 'Engineering checksheets for the Casting Division, containing standard drawings, measurement points, and fields to record actual measurement results.',
+            checksheetScope: 'Engineering · Casting Division (CD)',
+            checksheetTotalPublished: 'Published checksheets',
+            checksheetTotalAll: 'All checksheets',
+            checksheetPublishedLabel: 'Published',
+            checksheetLatestLabel: 'Latest update',
+            checksheetSearchLabel: 'Search checksheets',
+            checksheetSearchPlaceholder: 'Search title, code, owner, or keywords...',
+            checksheetSortLabel: 'Sort by',
+            checksheetSortUpdatedOption: 'Recently updated',
+            checksheetSortTitleOption: 'Title A-Z',
+            checksheetSortEffectiveOption: 'Effective date',
+            checksheetStatusLabel: 'Document status',
+            checksheetStatusAllOption: 'All statuses',
+            checksheetStatusPublishedOption: 'Published',
+            checksheetStatusDraftOption: 'Draft',
+            checksheetStatusObsoleteOption: 'Obsolete',
+            checksheetExportText: '📥 Export Checksheets to Excel',
+            checksheetAddText: '＋ Add Design Checksheet',
+            checksheetEmpty: 'No checksheets found. Add a design checksheet to get started.',
+            checksheetNoPublished: 'No published checksheets found.',
+            checksheetMissingPdf: 'PDF link missing',
+            checksheetOpenPdf: 'Open PDF / Google Drive',
+            checksheetEdit: 'Edit',
+            checksheetDelete: 'Delete',
+            checksheetUntitled: 'Untitled checksheet',
+            checksheetColumnNumber: 'No',
+            checksheetColumnCode: 'Document Code',
+            checksheetColumnTitle: 'Checksheet Name',
+            checksheetColumnRevision: 'Revision',
+            checksheetColumnEffective: 'Effective Date',
+            checksheetColumnScope: 'Measurement Scope',
+            checksheetColumnOwner: 'Document Owner / PIC',
+            checksheetColumnUpdated: 'Last Updated',
+            checksheetColumnFile: 'File'
+        }
+    };
+    const APPEARANCE_PRESETS = {
+        navy: { pageBackground: '#f3f6fa', surfaceColor: '#ffffff', textColor: '#172033', brandColor: '#174a7e', headingColor: '#142f4c', borderColor: '#dce4ed', queueColor: '#7392b1', loadingColor: '#c69a50', reviewColor: '#5e9a9a', doneColor: '#6d9a83' },
+        teal: { pageBackground: '#f1f7f7', surfaceColor: '#ffffff', textColor: '#18302f', brandColor: '#16766f', headingColor: '#124b49', borderColor: '#d4e5e3', queueColor: '#6e95a7', loadingColor: '#bd9552', reviewColor: '#378f8a', doneColor: '#6b9878' },
+        forest: { pageBackground: '#f3f7f2', surfaceColor: '#ffffff', textColor: '#1d2d22', brandColor: '#3f704b', headingColor: '#254a30', borderColor: '#d9e5da', queueColor: '#7894a4', loadingColor: '#b49452', reviewColor: '#5f8f83', doneColor: '#56845f' },
+        warm: { pageBackground: '#f8f5ef', surfaceColor: '#fffefa', textColor: '#302b23', brandColor: '#8a6238', headingColor: '#5c4025', borderColor: '#e7dfd1', queueColor: '#8192a0', loadingColor: '#bb8944', reviewColor: '#5d9693', doneColor: '#6b9471' }
     };
     let webSettings = { ...DEFAULT_WEB_SETTINGS };
 
     auth.onAuthStateChanged((user) => {
         isAdmin = !!user;
         setAdminUI();
+        if (user) {
+            document.getElementById('adminLoginDialog').close();
+            document.getElementById('adminLoginForm').reset();
+            document.getElementById('adminLoginError').hidden = true;
+        }
     });
 
     function escapeHTML(value) {
@@ -630,12 +1169,30 @@ const firebaseConfig = {
     }
 
     function showAppPage(page) {
-        const checksheetActive = page === 'checksheets';
-        document.getElementById('designLoadPage').hidden = checksheetActive;
-        document.getElementById('checksheetsPage').hidden = !checksheetActive;
-        document.getElementById(checksheetActive ? 'navChecksheets' : 'navDesignLoad').setAttribute('aria-current', 'page');
-        document.getElementById(checksheetActive ? 'navDesignLoad' : 'navChecksheets').removeAttribute('aria-current');
+        const activePage = ['dashboard', 'master-log', 'checksheets'].includes(page) ? page : 'dashboard';
+        activeAppPage = activePage;
+        document.getElementById('webEditorPanel').style.display = 'none';
+        document.getElementById('settingsAdminAction').removeAttribute('aria-current');
+        document.getElementById('dashboardPage').hidden = activePage !== 'dashboard';
+        document.getElementById('designLoadPage').hidden = activePage !== 'master-log';
+        document.getElementById('checksheetsPage').hidden = activePage !== 'checksheets';
+        setCurrentNavigationPage(activePage);
+        if (activePage === 'dashboard') renderDashboard();
+        if (activePage === 'master-log') renderBoard();
         renderChecksheets();
+    }
+
+    function setCurrentNavigationPage(activePage) {
+        const navigationPages = {
+            dashboard: 'navDashboard',
+            'master-log': 'navDesignLoad',
+            checksheets: 'navChecksheets'
+        };
+        Object.entries(navigationPages).forEach(([page, elementId]) => {
+            const button = document.getElementById(elementId);
+            if (page === activePage) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+        });
     }
 
     function toDateTimeLocalValue(value) {
@@ -704,12 +1261,33 @@ const firebaseConfig = {
         return date.getTime();
     }
 
+    function getDeadlineReminder(value) {
+        const timestamp = getSortableDate(value);
+        if (timestamp === null) return null;
+        if (timestamp < Date.now()) return { text: 'Overdue', className: 'deadline-overdue' };
+
+        const now = new Date();
+        const deadline = new Date(timestamp);
+        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const deadlineUtc = Date.UTC(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+        const daysUntil = Math.round((deadlineUtc - todayUtc) / 86400000);
+        if (daysUntil === 0) return { text: 'Due today', className: 'deadline-today' };
+        if (daysUntil <= 3) return { text: `Due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`, className: 'deadline-soon' };
+        return null;
+    }
+
     function getSortedHistoryProjects() {
         const sortBy = document.getElementById('historySortBy').value;
         const direction = document.getElementById('historySortDirection').value === 'desc' ? -1 : 1;
         const division = document.getElementById('historyDivisionFilter').value;
+        const status = document.getElementById('historyStatusFilter').value;
+        const query = document.getElementById('historySearch').value.trim().toLowerCase();
         return projects
-            .filter(project => division === 'all' || project.divisi === division)
+            .filter(project => (division === 'all' || project.divisi === division)
+                && (status === 'all' || project.status === status)
+                && (!query || [project.name, project.divisi, project.requestType, project.notes, project.status,
+                    ...(Array.isArray(project.progressNotes) ? project.progressNotes.map(note => typeof note === 'string' ? note : note?.text) : [])]
+                    .some(value => String(value || '').toLowerCase().includes(query))))
             .sort((a, b) => {
             if (sortBy === 'name') {
                 return direction * String(a.name || '').localeCompare(String(b.name || ''), 'en', { sensitivity: 'base', numeric: true });
@@ -726,10 +1304,75 @@ const firebaseConfig = {
         });
     }
 
-    function toggleBoardExpansion(status) {
-        if (!Object.prototype.hasOwnProperty.call(boardExpanded, status)) return;
-        boardExpanded[status] = !boardExpanded[status];
+    function openMasterLog(status = 'all') {
+        document.getElementById('historyStatusFilter').value = status;
+        document.getElementById('historySearch').value = '';
+        document.getElementById('historyDivisionFilter').value = 'all';
         renderBoard();
+        showAppPage('master-log');
+    }
+
+    function renderDashboard(settings = webSettings) {
+        const statusLabels = Object.fromEntries(['queue', 'loading', 'review', 'done'].map(status => [status, getStatusLabel(status, settings)]));
+        const statusIcons = { queue: '📥', loading: '⏳', review: '🔍', done: '✅' };
+        const openProjects = projects.filter(project => project.status !== 'done');
+        const attentionProjects = openProjects
+            .map(project => ({ project, reminder: getDeadlineReminder(project.deadline), timestamp: getSortableDate(project.deadline) }))
+            .filter(item => item.reminder)
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        document.getElementById('dashboardTotal').textContent = String(projects.length);
+        document.getElementById('dashboardDeadlineCount').textContent = String(attentionProjects.length);
+
+        const reminders = document.getElementById('dashboardReminders');
+        reminders.innerHTML = attentionProjects.length
+            ? attentionProjects.slice(0, 5).map(({ project, reminder }) => `
+                <div class="dashboard-reminder">
+                    <div class="dashboard-project-info">
+                        <strong>${escapeHTML(project.name || 'Untitled project')}</strong>
+                        <span>${escapeHTML(formatDateTime(project.deadline))} · ${escapeHTML(project.divisi || '-')}</span>
+                    </div>
+                    <span class="deadline-badge ${reminder.className}">${escapeHTML(reminder.text)}</span>
+                </div>`).join('')
+            : `<div class="dashboard-empty">${escapeHTML(getPageCopy('dashboardNoReminders', settings))}</div>`;
+
+        const sortBy = document.getElementById('dashboardSortBy').value;
+        document.getElementById('dashboardStatusCards').innerHTML = Object.entries(statusLabels).map(([status, label]) => {
+            const statusProjects = [...projects]
+                .filter(project => project.status === status)
+                .sort((a, b) => {
+                    const field = sortBy === 'deadline' ? 'deadline' : 'waktuMasuk';
+                    const dateA = getSortableDate(a[field]);
+                    const dateB = getSortableDate(b[field]);
+                    if (dateA === null || dateB === null) {
+                        if (dateA === dateB) return Number(b.id || 0) - Number(a.id || 0);
+                        return dateA === null ? 1 : -1;
+                    }
+                    const dateOrder = field === 'deadline' ? dateA - dateB : dateB - dateA;
+                    return dateOrder || Number(b.id || 0) - Number(a.id || 0);
+                });
+            const projectPreview = statusProjects.slice(0, 3);
+            const previewHTML = projectPreview.length
+                ? `<div class="dashboard-status-projects">${projectPreview.map(project => {
+                    const reminder = status === 'done' ? null : getDeadlineReminder(project.deadline);
+                    return `<div class="dashboard-status-project">
+                        <strong>${escapeHTML(project.name || 'Untitled project')}</strong>
+                        <span>${escapeHTML(project.divisi || '-')} · Deadline: ${escapeHTML(formatDateTime(project.deadline))}${reminder ? ` · <span class="deadline-badge ${reminder.className}">${escapeHTML(reminder.text)}</span>` : ''}</span>
+                    </div>`;
+                }).join('')}</div>`
+                : `<div class="dashboard-status-empty">${escapeHTML(getPageCopy('dashboardNoProjects', settings))}</div>`;
+            const moreLabel = statusProjects.length > projectPreview.length
+                ? getPageCopy('dashboardViewAll', settings).replace('{count}', String(statusProjects.length))
+                : getPageCopy('dashboardViewStatus', settings).replace('{status}', label);
+            return `<section class="dashboard-status-card status-${status}" aria-labelledby="dashboard-status-${status}">
+                <div class="dashboard-status-card-header">
+                    <h3 id="dashboard-status-${status}">${statusIcons[status]} ${label}</h3>
+                    <span class="dashboard-status-count">${statusProjects.length}</span>
+                </div>
+                ${previewHTML}
+                <button class="dashboard-status-link" type="button" onclick="openMasterLog('${status}')">${moreLabel}</button>
+            </section>`;
+        }).join('');
     }
 
     function setDefaultEntryTime() {
@@ -762,29 +1405,157 @@ const firebaseConfig = {
         document.getElementById('btnBackupJSON').style.display = isAdmin ? 'inline-block' : 'none';
         document.getElementById('btnRestoreJSON').style.display = isAdmin ? 'inline-block' : 'none';
         document.getElementById('th-aksi').style.display = isAdmin ? 'table-cell' : 'none';
-        document.getElementById('btnAdminMode').innerText = isAdmin ? 'Admin Logout' : 'Admin Login';
-        document.getElementById('btnEditWeb').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('settingsAdminAction').textContent = isAdmin ? 'Website Settings' : 'Admin Settings';
+        document.getElementById('settingsLogout').hidden = !isAdmin;
+        document.getElementById('btnExportChecksheets').hidden = !isAdmin;
+        document.getElementById('btnExportChecksheets').style.display = isAdmin ? 'inline-block' : 'none';
         document.getElementById('checksheetStatusFilterWrap').hidden = !isAdmin;
         document.getElementById('addChecksheetButton').hidden = !isAdmin;
         document.getElementById('checksheetPublishedStat').hidden = !isAdmin;
-        document.getElementById('checksheetTotalLabel').textContent = isAdmin ? 'All checksheets' : 'Published checksheets';
-        if (!isAdmin) document.getElementById('webEditorPanel').style.display = 'none';
+        document.getElementById('checksheetTotalLabel').textContent = getPageCopy(isAdmin ? 'checksheetTotalAll' : 'checksheetTotalPublished');
+        if (!isAdmin) tutupEditorWeb();
         renderBoard();
         renderChecksheets();
     }
 
-    function applyWebSettings() {
-        document.querySelector('.header h1').innerText = webSettings.title;
-        document.querySelector('.header small').innerText = webSettings.subtitle;
+    function applyWebSettings(settings = webSettings) {
+        const root = document.documentElement;
+        const brand = isValidHexColor(settings.brandColor) ? settings.brandColor : DEFAULT_WEB_SETTINGS.brandColor;
+        const heading = isValidHexColor(settings.headingColor) ? settings.headingColor : DEFAULT_WEB_SETTINGS.headingColor;
+        const surface = isValidHexColor(settings.surfaceColor) ? settings.surfaceColor : DEFAULT_WEB_SETTINGS.surfaceColor;
+        const mutedSurface = colorWithWhite(settings.pageBackground, '#f7f9fc');
+        root.style.setProperty('--bg-color', isValidHexColor(settings.pageBackground) ? settings.pageBackground : DEFAULT_WEB_SETTINGS.pageBackground);
+        root.style.setProperty('--card-bg', surface);
+        root.style.setProperty('--surface-muted', mutedSurface);
+        root.style.setProperty('--text-color', isValidHexColor(settings.textColor) ? settings.textColor : DEFAULT_WEB_SETTINGS.textColor);
+        root.style.setProperty('--muted-text', `color-mix(in srgb, ${isValidHexColor(settings.textColor) ? settings.textColor : DEFAULT_WEB_SETTINGS.textColor} 68%, ${surface})`);
+        root.style.setProperty('--blue-900', heading);
+        root.style.setProperty('--blue-800', brand);
+        root.style.setProperty('--blue-700', brand);
+        root.style.setProperty('--blue-600', brand);
+        root.style.setProperty('--blue-100', colorWithWhite(brand, '#eaf2f9'));
+        root.style.setProperty('--blue-050', mutedSurface);
+        root.style.setProperty('--border-color', isValidHexColor(settings.borderColor) ? settings.borderColor : DEFAULT_WEB_SETTINGS.borderColor);
+        root.style.setProperty('--font-family', getFontStack(settings.fontFamily));
+        root.style.setProperty('--content-width', ['1200px', '1480px', '1720px'].includes(settings.contentWidth) ? settings.contentWidth : DEFAULT_WEB_SETTINGS.contentWidth);
+        root.style.setProperty('--nav-width', ['168px', '208px', '256px'].includes(settings.navWidth) ? settings.navWidth : DEFAULT_WEB_SETTINGS.navWidth);
+        const logoDimensions = settings.logoScale === 'small'
+            ? ['120px', '52px']
+            : settings.logoScale === 'large' ? ['240px', '96px'] : ['5cm', '2cm'];
+        root.style.setProperty('--logo-width', logoDimensions[0]);
+        root.style.setProperty('--logo-height', logoDimensions[1]);
+        const cornerRadii = settings.cornerStyle === 'rounded'
+            ? ['18px', '14px', '10px']
+            : settings.cornerStyle === 'square' ? ['4px', '3px', '2px'] : ['12px', '9px', '6px'];
+        root.style.setProperty('--radius-lg', cornerRadii[0]);
+        root.style.setProperty('--radius-md', cornerRadii[1]);
+        root.style.setProperty('--radius-sm', cornerRadii[2]);
+        root.style.setProperty('--status-queue', isValidHexColor(settings.queueColor) ? settings.queueColor : DEFAULT_WEB_SETTINGS.queueColor);
+        root.style.setProperty('--status-loading', isValidHexColor(settings.loadingColor) ? settings.loadingColor : DEFAULT_WEB_SETTINGS.loadingColor);
+        root.style.setProperty('--status-review', isValidHexColor(settings.reviewColor) ? settings.reviewColor : DEFAULT_WEB_SETTINGS.reviewColor);
+        root.style.setProperty('--status-done', isValidHexColor(settings.doneColor) ? settings.doneColor : DEFAULT_WEB_SETTINGS.doneColor);
+        document.body.classList.add('appearance-customization');
+        document.body.dataset.density = ['compact', 'comfortable'].includes(settings.density) ? settings.density : 'regular';
+        document.querySelector('.header h1').textContent = settings.title || DEFAULT_WEB_SETTINGS.title;
+        document.querySelector('.header small').textContent = settings.subtitle || DEFAULT_WEB_SETTINGS.subtitle;
+        document.getElementById('dashboardPageTitle').textContent = settings.dashboardTitle || DEFAULT_WEB_SETTINGS.dashboardTitle;
+        document.getElementById('dashboardPageDescription').textContent = settings.dashboardDescription || DEFAULT_WEB_SETTINGS.dashboardDescription;
+        document.getElementById('dashboardReminderTitleText').textContent = settings.reminderTitle || DEFAULT_WEB_SETTINGS.reminderTitle;
+        document.getElementById('webEditorHeading').style.color = heading;
         const logo = document.querySelector('.company-logo');
-        logo.hidden = !webSettings.logoData;
-        if (webSettings.logoData) logo.src = webSettings.logoData;
-        document.querySelector('#adminPanel h3').innerText = webSettings.formTitle;
-        document.getElementById('historyTitleText').innerText = webSettings.historyTitle;
-        document.querySelector('#col-queue').previousElementSibling.firstChild.textContent = webSettings.queueTitle + ' ';
-        document.querySelector('#col-loading').previousElementSibling.firstChild.textContent = webSettings.loadingTitle + ' ';
-        document.querySelector('#col-review').previousElementSibling.firstChild.textContent = webSettings.reviewTitle + ' ';
-        document.querySelector('#col-done').previousElementSibling.firstChild.textContent = webSettings.doneTitle + ' ';
+        logo.hidden = !(settings.logoData || '');
+        if (settings.logoData) logo.src = settings.logoData;
+        document.querySelector('#adminPanel h3').textContent = settings.formTitle || DEFAULT_WEB_SETTINGS.formTitle;
+        document.getElementById('historyTitleText').textContent = settings.historyTitle || DEFAULT_WEB_SETTINGS.historyTitle;
+        applyPageCopy(settings);
+        applyStatusLabels(settings);
+    }
+
+    function getPageCopy(key, settings = webSettings) {
+        const defaults = DEFAULT_WEB_SETTINGS.pageCopy;
+        const copy = { ...defaults, ...(settings.pageCopy || {}) };
+        return copy[key] || defaults[key] || '';
+    }
+
+    function applyPageCopy(settings = webSettings) {
+        const masterFieldCopyIds = {
+            masterProjectNameLabel: 'masterProjectNameLabel',
+            masterProjectDivisionLabel: 'masterProjectDivisionLabel',
+            masterProjectTypeLabel: 'masterProjectTypeLabel',
+            masterProjectPdfLabel: 'masterProjectPdfLabel',
+            masterProjectPdfHint: 'masterProjectPdfHint',
+            masterProjectEntryLabel: 'masterProjectEntryLabel',
+            masterProjectDeadlineLabel: 'masterProjectDeadlineLabel',
+            masterProjectNotesLabel: 'masterProjectNotesLabel',
+            masterAddRequestText: 'masterAddRequestText'
+        };
+        Object.entries(masterFieldCopyIds).forEach(([key, id]) => {
+            document.getElementById(id).textContent = getPageCopy(key, settings);
+        });
+        document.querySelectorAll('[data-page-copy]').forEach(element => {
+            const key = element.dataset.pageCopy;
+            element.textContent = getPageCopy(key, settings);
+        });
+        document.querySelectorAll('[data-page-placeholder]').forEach(element => {
+            const key = element.dataset.pagePlaceholder;
+            element.placeholder = getPageCopy(key, settings);
+        });
+        const totalLabel = document.getElementById('checksheetTotalLabel');
+        totalLabel.textContent = isAdmin ? getPageCopy('checksheetTotalAll', settings) : getPageCopy('checksheetTotalPublished', settings);
+        document.getElementById('checksheetPageTitle').textContent = getPageCopy('checksheetTitle', settings);
+        document.getElementById('checksheetPageDescription').textContent = getPageCopy('checksheetDescription', settings);
+        document.getElementById('checksheetScope').textContent = getPageCopy('checksheetScope', settings);
+        document.getElementById('checksheetPublishedLabel').textContent = getPageCopy('checksheetPublishedLabel', settings);
+        document.getElementById('checksheetLatestLabel').textContent = getPageCopy('checksheetLatestLabel', settings);
+        ['Number', 'Code', 'Title', 'Revision', 'Effective', 'Scope', 'Owner', 'Updated', 'File'].forEach(name => {
+            const key = `checksheetColumn${name}`;
+            document.getElementById(key).textContent = getPageCopy(key, settings);
+        });
+        document.getElementById('checksheetExportText').textContent = getPageCopy('checksheetExportText', settings);
+        document.getElementById('checksheetAddText').textContent = getPageCopy('checksheetAddText', settings);
+        document.getElementById('th-aksi').textContent = getPageCopy('masterColumnActions', settings);
+        applyStatusLabels(settings);
+        renderChecksheets(settings);
+    }
+
+    function isValidHexColor(value) {
+        return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+    }
+
+    function colorWithWhite(value, fallback) {
+        if (!isValidHexColor(value)) return fallback;
+        return `color-mix(in srgb, ${value} 9%, white)`;
+    }
+
+    function getFontStack(font) {
+        const stacks = {
+            'Segoe UI': "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            Arial: 'Arial, Helvetica, sans-serif',
+            Verdana: 'Verdana, Geneva, sans-serif',
+            Georgia: 'Georgia, serif',
+            Tahoma: 'Tahoma, Geneva, sans-serif'
+        };
+        return stacks[font] || stacks['Segoe UI'];
+    }
+
+    function getStatusLabel(status, settings = webSettings) {
+        const fieldByStatus = { queue: 'queueTitle', loading: 'loadingTitle', review: 'reviewTitle', done: 'doneTitle' };
+        const defaults = { queue: 'Incoming', loading: 'In Progress', review: 'Under Review', done: 'Done' };
+        return (settings[fieldByStatus[status]] || defaults[status] || status).replace(/^(📥|⏳|🔍|✅)\s*/, '');
+    }
+
+    function applyStatusLabels(settings = webSettings) {
+        const optionMaps = [
+            ['historyStatusFilter', { queue: 1, loading: 2, review: 3, done: 4 }],
+            ['editProjectStatus', { queue: 0, loading: 1, review: 2, done: 3 }]
+        ];
+        optionMaps.forEach(([id, indices]) => {
+            const select = document.getElementById(id);
+            Object.entries(indices).forEach(([status, index]) => {
+                if (select.options[index]) select.options[index].textContent = getStatusLabel(status, settings);
+            });
+        });
+        renderBoard(settings);
     }
 
     function loadWebSettings() {
@@ -798,14 +1569,109 @@ const firebaseConfig = {
     function fillWebEditor() {
         document.getElementById('webTitle').value = webSettings.title;
         document.getElementById('webSubtitle').value = webSettings.subtitle;
+        document.getElementById('webDashboardTitle').value = webSettings.dashboardTitle;
+        document.getElementById('webDashboardDescription').value = webSettings.dashboardDescription;
+        document.getElementById('webDashboardReminderTitle').value = webSettings.reminderTitle;
         selectedLogoData = null;
         renderLogoPreview();
         document.getElementById('webFormTitle').value = webSettings.formTitle;
         document.getElementById('webHistoryTitle').value = webSettings.historyTitle;
-        document.getElementById('webQueueTitle').value = webSettings.queueTitle;
-        document.getElementById('webLoadingTitle').value = webSettings.loadingTitle;
-        document.getElementById('webReviewTitle').value = webSettings.reviewTitle;
-        document.getElementById('webDoneTitle').value = webSettings.doneTitle;
+        document.getElementById('webQueueTitle').value = getStatusLabel('queue');
+        document.getElementById('webLoadingTitle').value = getStatusLabel('loading');
+        document.getElementById('webReviewTitle').value = getStatusLabel('review');
+        document.getElementById('webDoneTitle').value = getStatusLabel('done');
+        document.getElementById('webThemePreset').value = APPEARANCE_PRESETS[webSettings.themePreset] ? webSettings.themePreset : 'custom';
+        document.getElementById('webPageBackground').value = webSettings.pageBackground;
+        document.getElementById('webSurfaceColor').value = webSettings.surfaceColor;
+        document.getElementById('webTextColor').value = webSettings.textColor;
+        document.getElementById('webBrandColor').value = webSettings.brandColor;
+        document.getElementById('webHeadingColor').value = webSettings.headingColor;
+        document.getElementById('webBorderColor').value = webSettings.borderColor;
+        document.getElementById('webFontFamily').value = webSettings.fontFamily;
+        document.getElementById('webCornerStyle').value = webSettings.cornerStyle;
+        document.getElementById('webDensity').value = webSettings.density;
+        document.getElementById('webContentWidth').value = webSettings.contentWidth;
+        document.getElementById('webNavWidth').value = webSettings.navWidth;
+        document.getElementById('webLogoScale').value = webSettings.logoScale;
+        const pageCopy = { ...DEFAULT_WEB_SETTINGS.pageCopy, ...(webSettings.pageCopy || {}) };
+        document.querySelectorAll('[data-page-copy-edit]').forEach(element => {
+            element.value = pageCopy[element.dataset.pageCopyEdit] || '';
+        });
+        document.getElementById('webQueueColor').value = webSettings.queueColor;
+        document.getElementById('webLoadingColor').value = webSettings.loadingColor;
+        document.getElementById('webReviewColor').value = webSettings.reviewColor;
+        document.getElementById('webDoneColor').value = webSettings.doneColor;
+    }
+
+    function getWebSettingsFromEditor() {
+        const pageCopy = { ...DEFAULT_WEB_SETTINGS.pageCopy, ...(webSettings.pageCopy || {}) };
+        document.querySelectorAll('[data-page-copy-edit]').forEach(element => {
+            pageCopy[element.dataset.pageCopyEdit] = element.value.trim() || DEFAULT_WEB_SETTINGS.pageCopy[element.dataset.pageCopyEdit];
+        });
+        return {
+            ...webSettings,
+            title: document.getElementById('webTitle').value.trim() || DEFAULT_WEB_SETTINGS.title,
+            subtitle: document.getElementById('webSubtitle').value.trim() || DEFAULT_WEB_SETTINGS.subtitle,
+            dashboardTitle: document.getElementById('webDashboardTitle').value.trim() || DEFAULT_WEB_SETTINGS.dashboardTitle,
+            dashboardDescription: document.getElementById('webDashboardDescription').value.trim() || DEFAULT_WEB_SETTINGS.dashboardDescription,
+            reminderTitle: document.getElementById('webDashboardReminderTitle').value.trim() || DEFAULT_WEB_SETTINGS.reminderTitle,
+            logoData: selectedLogoData === null ? (webSettings.logoData || '') : selectedLogoData,
+            formTitle: document.getElementById('webFormTitle').value.trim() || DEFAULT_WEB_SETTINGS.formTitle,
+            historyTitle: document.getElementById('webHistoryTitle').value.trim() || DEFAULT_WEB_SETTINGS.historyTitle,
+            queueTitle: document.getElementById('webQueueTitle').value.trim() || DEFAULT_WEB_SETTINGS.queueTitle,
+            loadingTitle: document.getElementById('webLoadingTitle').value.trim() || DEFAULT_WEB_SETTINGS.loadingTitle,
+            reviewTitle: document.getElementById('webReviewTitle').value.trim() || DEFAULT_WEB_SETTINGS.reviewTitle,
+            doneTitle: document.getElementById('webDoneTitle').value.trim() || DEFAULT_WEB_SETTINGS.doneTitle,
+            themePreset: document.getElementById('webThemePreset').value,
+            pageBackground: document.getElementById('webPageBackground').value,
+            surfaceColor: document.getElementById('webSurfaceColor').value,
+            textColor: document.getElementById('webTextColor').value,
+            brandColor: document.getElementById('webBrandColor').value,
+            headingColor: document.getElementById('webHeadingColor').value,
+            borderColor: document.getElementById('webBorderColor').value,
+            fontFamily: document.getElementById('webFontFamily').value,
+            cornerStyle: document.getElementById('webCornerStyle').value,
+            density: document.getElementById('webDensity').value,
+            contentWidth: document.getElementById('webContentWidth').value,
+            navWidth: document.getElementById('webNavWidth').value,
+            logoScale: document.getElementById('webLogoScale').value,
+            queueColor: document.getElementById('webQueueColor').value,
+            loadingColor: document.getElementById('webLoadingColor').value,
+            reviewColor: document.getElementById('webReviewColor').value,
+            doneColor: document.getElementById('webDoneColor').value,
+            pageCopy
+        };
+    }
+
+    function previewWebSettings() {
+        applyWebSettings(getWebSettingsFromEditor());
+    }
+
+    function applyAppearancePreset(presetName) {
+        const preset = APPEARANCE_PRESETS[presetName];
+        if (!preset) return;
+        document.getElementById('webThemePreset').value = presetName;
+        Object.entries({
+            webPageBackground: preset.pageBackground,
+            webSurfaceColor: preset.surfaceColor,
+            webTextColor: preset.textColor,
+            webBrandColor: preset.brandColor,
+            webHeadingColor: preset.headingColor,
+            webBorderColor: preset.borderColor,
+            webQueueColor: preset.queueColor,
+            webLoadingColor: preset.loadingColor,
+            webReviewColor: preset.reviewColor,
+            webDoneColor: preset.doneColor
+        }).forEach(([id, value]) => { document.getElementById(id).value = value; });
+        previewWebSettings();
+    }
+
+    function resetWebSettings() {
+        webSettings = { ...DEFAULT_WEB_SETTINGS };
+        selectedLogoData = '';
+        document.getElementById('webLogoInput').value = '';
+        fillWebEditor();
+        previewWebSettings();
     }
 
     function readFileAsDataURL(file) {
@@ -863,6 +1729,7 @@ const firebaseConfig = {
         try {
             selectedLogoData = await compressLogo(file);
             renderLogoPreview();
+            previewWebSettings();
         } catch (error) {
             event.target.value = '';
             alert(error.message || 'The selected logo could not be processed.');
@@ -877,14 +1744,57 @@ const firebaseConfig = {
         selectedLogoData = '';
         document.getElementById('webLogoInput').value = '';
         renderLogoPreview();
+        previewWebSettings();
     }
 
     function bukaEditorWeb() {
         if (!isAdmin) return;
         const panel = document.getElementById('webEditorPanel');
-        const willOpen = panel.style.display === 'none' || panel.style.display === '';
-        panel.style.display = willOpen ? 'block' : 'none';
-        if (willOpen) fillWebEditor();
+        if (panel.style.display === 'block') {
+            tutupEditorWeb();
+            return;
+        }
+        fillWebEditor();
+        document.getElementById('dashboardPage').hidden = true;
+        document.getElementById('designLoadPage').hidden = true;
+        document.getElementById('checksheetsPage').hidden = true;
+        document.getElementById('navDashboard').removeAttribute('aria-current');
+        document.getElementById('navDesignLoad').removeAttribute('aria-current');
+        document.getElementById('navChecksheets').removeAttribute('aria-current');
+        const settingsToggle = document.getElementById('settingsToggle');
+        settingsToggle.setAttribute('aria-expanded', 'true');
+        document.getElementById('settingsSubnav').hidden = false;
+        document.getElementById('settingsAdminAction').setAttribute('aria-current', 'page');
+        panel.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function tutupEditorWeb() {
+        document.getElementById('webEditorPanel').style.display = 'none';
+        document.getElementById('settingsAdminAction').removeAttribute('aria-current');
+        document.getElementById('dashboardPage').hidden = activeAppPage !== 'dashboard';
+        document.getElementById('designLoadPage').hidden = activeAppPage !== 'master-log';
+        document.getElementById('checksheetsPage').hidden = activeAppPage !== 'checksheets';
+        setCurrentNavigationPage(activeAppPage);
+    }
+
+    function toggleSettingsMenu() {
+        const button = document.getElementById('settingsToggle');
+        const submenu = document.getElementById('settingsSubnav');
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', String(!isExpanded));
+        submenu.hidden = isExpanded;
+    }
+
+    function bukaPengaturanAdmin() {
+        if (isAdmin) {
+            bukaEditorWeb();
+            return;
+        }
+        const dialog = document.getElementById('adminLoginDialog');
+        document.getElementById('adminLoginError').hidden = true;
+        if (!dialog.open) dialog.showModal();
+        document.getElementById('adminEmail').focus();
     }
 
     async function simpanPengaturanWeb() {
@@ -893,17 +1803,7 @@ const firebaseConfig = {
             alert('Please wait for the logo to finish processing.');
             return;
         }
-        webSettings = {
-            title: document.getElementById('webTitle').value.trim() || DEFAULT_WEB_SETTINGS.title,
-            subtitle: document.getElementById('webSubtitle').value.trim() || DEFAULT_WEB_SETTINGS.subtitle,
-            logoData: selectedLogoData === null ? (webSettings.logoData || '') : selectedLogoData,
-            formTitle: document.getElementById('webFormTitle').value.trim() || DEFAULT_WEB_SETTINGS.formTitle,
-            historyTitle: document.getElementById('webHistoryTitle').value.trim() || DEFAULT_WEB_SETTINGS.historyTitle,
-            queueTitle: document.getElementById('webQueueTitle').value.trim() || DEFAULT_WEB_SETTINGS.queueTitle,
-            loadingTitle: document.getElementById('webLoadingTitle').value.trim() || DEFAULT_WEB_SETTINGS.loadingTitle,
-            reviewTitle: document.getElementById('webReviewTitle').value.trim() || DEFAULT_WEB_SETTINGS.reviewTitle,
-            doneTitle: document.getElementById('webDoneTitle').value.trim() || DEFAULT_WEB_SETTINGS.doneTitle
-        };
+        webSettings = getWebSettingsFromEditor();
         localStorage.setItem(WEB_SETTINGS_KEY, JSON.stringify(webSettings));
         applyWebSettings();
         selectedLogoData = null;
@@ -946,13 +1846,13 @@ const firebaseConfig = {
         });
     }
 
-    function renderChecksheetCard(item) {
+    function renderChecksheetCard(item, settings = webSettings) {
         const status = ['published', 'draft', 'obsolete'].includes(item.status) ? item.status : 'draft';
         const url = safeHttpsUrl(item.fileUrl);
-        const actions = `${url ? `<a class="btn btn-admin" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Open PDF / Google Drive</a>` : '<span class="checksheet-badge">PDF link missing</span>'}${isAdmin ? `<button class="btn btn-admin" type="button" onclick="openChecksheetEditor('${escapeHTML(item.fbKey)}')">Edit</button><button class="btn btn-admin" type="button" onclick="deleteChecksheet('${escapeHTML(item.fbKey)}')">Delete</button>` : ''}`;
+        const actions = `${url ? `<a class="btn btn-admin" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(getPageCopy('checksheetOpenPdf', settings))}</a>` : `<span class="checksheet-badge">${escapeHTML(getPageCopy('checksheetMissingPdf', settings))}</span>`}${isAdmin ? `<button class="btn btn-admin" type="button" onclick="openChecksheetEditor('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetEdit', settings))}</button><button class="btn btn-admin" type="button" onclick="deleteChecksheet('${escapeHTML(item.fbKey)}')">${escapeHTML(getPageCopy('checksheetDelete', settings))}</button>` : ''}`;
         return `<article class="checksheet-card">
-            <h3>${escapeHTML(item.title || 'Untitled checksheet')}</h3>
-            <div class="checksheet-badges"><span class="checksheet-badge status-${status}">${escapeHTML(status)}</span>${item.documentCode ? `<span class="checksheet-badge">${escapeHTML(item.documentCode)}</span>` : ''}${item.revision ? `<span class="checksheet-badge">${escapeHTML(item.revision)}</span>` : ''}</div>
+            <h3>${escapeHTML(item.title || getPageCopy('checksheetUntitled', settings))}</h3>
+            <div class="checksheet-badges"><span class="checksheet-badge status-${status}">${escapeHTML(getPageCopy(`checksheetStatus${status[0].toUpperCase()}${status.slice(1)}Option`, settings))}</span>${item.documentCode ? `<span class="checksheet-badge">${escapeHTML(item.documentCode)}</span>` : ''}${item.revision ? `<span class="checksheet-badge">${escapeHTML(item.revision)}</span>` : ''}</div>
             ${item.description ? `<p class="checksheet-description">${escapeHTML(item.description)}</p>` : ''}
             <div class="checksheet-meta">
                 <div><strong>Measurement scope</strong>${escapeHTML(item.description || '-')}</div>
@@ -966,28 +1866,127 @@ const firebaseConfig = {
         </article>`;
     }
 
-    function renderChecksheets() {
+    function renderChecksheets(settings = webSettings) {
         if (!document.getElementById('checksheetList')) return;
         const published = checksheets.filter(item => (item.status || 'draft') === 'published');
         const visible = getVisibleChecksheets();
         const latest = checksheets.reduce((max, item) => Math.max(max, checksheetUpdatedAt(item)), 0);
         document.getElementById('checksheetTotalCount').textContent = String(isAdmin ? checksheets.length : published.length);
+        document.getElementById('checksheetTotalLabel').textContent = getPageCopy(isAdmin ? 'checksheetTotalAll' : 'checksheetTotalPublished', settings);
         document.getElementById('checksheetPublishedCount').textContent = String(published.length);
         document.getElementById('checksheetLatestUpdate').textContent = latest ? formatChecksheetDate(latest) : '-';
         document.getElementById('checksheetList').hidden = !isAdmin;
         document.getElementById('checksheetViewerTableContainer').hidden = isAdmin;
         if (isAdmin) {
             document.getElementById('checksheetList').innerHTML = visible.length
-                ? visible.map(renderChecksheetCard).join('')
-                : '<div class="checksheet-empty">No checksheets found. Add a design checksheet to get started.</div>';
+                ? visible.map(item => renderChecksheetCard(item, settings)).join('')
+                : `<div class="checksheet-empty">${escapeHTML(getPageCopy('checksheetEmpty', settings))}</div>`;
             return;
         }
         document.getElementById('checksheetViewerTableBody').innerHTML = visible.length
             ? visible.map((item, index) => {
                 const url = safeHttpsUrl(item.fileUrl);
-                return `<tr><td><strong>${index + 1}</strong></td><td>${escapeHTML(item.documentCode || '-')}</td><td>${escapeHTML(item.title || '-')}</td><td>${escapeHTML(item.revision || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</td><td>${escapeHTML(item.description || '-')}</td><td>${escapeHTML(item.owner || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</td><td>${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.fileName || 'View PDF in Google Drive')}</a>` : '-'}</td></tr>`;
+                return `<tr><td><strong>${index + 1}</strong></td><td>${escapeHTML(item.documentCode || '-')}</td><td>${escapeHTML(item.title || '-')}</td><td>${escapeHTML(item.revision || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.effectiveDate))}</td><td>${escapeHTML(item.description || '-')}</td><td>${escapeHTML(item.owner || '-')}</td><td>${escapeHTML(formatChecksheetDate(item.updatedAt || item.createdAt, true))}</td><td>${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.fileName || getPageCopy('checksheetOpenPdf', settings))}</a>` : '-'}</td></tr>`;
             }).join('')
-            : '<tr><td colspan="9" style="text-align:center;padding:24px;">No published checksheets found.</td></tr>';
+            : `<tr><td colspan="9" style="text-align:center;padding:24px;">${escapeHTML(getPageCopy('checksheetNoPublished', settings))}</td></tr>`;
+    }
+
+    function progressNotesForExport(notes) {
+        if (!Array.isArray(notes)) return '';
+        return notes.map(note => {
+            if (typeof note === 'string') return note;
+            if (!note || typeof note !== 'object') return '';
+            const date = note.createdAt ? ` (${note.createdAt})` : '';
+            return `${note.text || ''}${date}`;
+        }).filter(Boolean).join('\n');
+    }
+
+    function buildProjectExportSheet() {
+        const rows = [[
+            'Project Name', 'Approved PDF', 'Division', 'System Entry Time',
+            'Deadline', 'Request Type', 'Notes', 'Progress Notes', 'Process Status'
+        ]];
+        projects.forEach(project => {
+            const status = {
+                queue: 'Incoming',
+                loading: 'In Progress',
+                review: 'Under Review',
+                done: 'Done'
+            }[project.status] || project.status || '';
+            rows.push([
+                project.name || '',
+                getProjectApprovedPdf(project),
+                project.divisi || '',
+                project.waktuMasuk || '',
+                project.deadline || '',
+                project.requestType || '',
+                project.notes || '',
+                progressNotesForExport(project.progressNotes),
+                status
+            ]);
+        });
+        return XLSX.utils.aoa_to_sheet(rows);
+    }
+
+    function buildChecksheetExportSheet() {
+        const rows = [[
+            'Checksheet Name', 'Document Code', 'Revision', 'Status',
+            'Effective Date', 'Next Review Date', 'Document Owner / PIC',
+            'Measurement Scope', 'Keywords', 'PDF Display Name', 'PDF Link',
+            'Created At', 'Last Updated'
+        ]];
+        checksheets.forEach(item => {
+            rows.push([
+                item.title || '',
+                item.documentCode || '',
+                item.revision || '',
+                item.status || 'draft',
+                item.effectiveDate || '',
+                item.reviewDate || '',
+                item.owner || '',
+                item.description || '',
+                Array.isArray(item.keywords) ? item.keywords.join(', ') : (item.keywords || ''),
+                item.fileName || '',
+                safeHttpsUrl(item.fileUrl),
+                item.createdAt || '',
+                item.updatedAt || ''
+            ]);
+        });
+        return XLSX.utils.aoa_to_sheet(rows);
+    }
+
+    function downloadExcelWorkbook(sheets, filename) {
+        if (!isAdmin) {
+            alert('Admin access is required to export data.');
+            return;
+        }
+        if (!window.XLSX) {
+            alert('Excel export is unavailable because the spreadsheet library did not load. Check your internet connection and reload the page.');
+            return;
+        }
+        try {
+            const workbook = XLSX.utils.book_new();
+            sheets.forEach(({ name, sheet }) => XLSX.utils.book_append_sheet(workbook, sheet, name));
+            XLSX.writeFile(workbook, filename);
+        } catch (error) {
+            console.error('Unable to export Excel workbook', error);
+            alert(`Excel export failed: ${error.message}`);
+        }
+    }
+
+    function eksporKeExcel() {
+        const workbookDate = new Date().toISOString().slice(0, 10);
+        downloadExcelWorkbook([
+            { name: 'Projects', sheet: buildProjectExportSheet() },
+            { name: 'Checksheets', sheet: buildChecksheetExportSheet() }
+        ], `design-load-export-${workbookDate}.xlsx`);
+    }
+
+    function eksporChecksheetsKeExcel() {
+        const workbookDate = new Date().toISOString().slice(0, 10);
+        downloadExcelWorkbook([
+            { name: 'Checksheets', sheet: buildChecksheetExportSheet() }
+        ], `design-checksheets-${workbookDate}.xlsx`);
     }
 
     function openChecksheetEditor(key = null) {
@@ -1065,10 +2064,35 @@ const firebaseConfig = {
 
     document.getElementById('editProjectForm').addEventListener('submit', saveProjectEdits);
     document.getElementById('checksheetEditorForm').addEventListener('submit', saveChecksheet);
-    document.getElementById('appMain').insertBefore(document.getElementById('webEditorPanel'), document.getElementById('designLoadPage'));
+    const appMain = document.getElementById('appMain');
+    appMain.insertBefore(document.getElementById('webEditorPanel'), appMain.firstElementChild);
+    document.getElementById('dashboardSortBy').addEventListener('change', renderDashboard);
+    document.getElementById('historySearch').addEventListener('input', renderBoard);
+    document.getElementById('historyStatusFilter').addEventListener('change', renderBoard);
     document.getElementById('historySortBy').addEventListener('change', renderBoard);
     document.getElementById('historySortDirection').addEventListener('change', renderBoard);
     document.getElementById('historyDivisionFilter').addEventListener('change', renderBoard);
+    document.getElementById('webThemePreset').addEventListener('change', event => {
+        if (event.target.value === 'custom') previewWebSettings();
+        else applyAppearancePreset(event.target.value);
+    });
+    ['webPageBackground', 'webSurfaceColor', 'webTextColor', 'webBrandColor', 'webHeadingColor', 'webBorderColor',
+        'webQueueColor', 'webLoadingColor', 'webReviewColor', 'webDoneColor'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            document.getElementById('webThemePreset').value = 'custom';
+            previewWebSettings();
+        });
+    });
+    ['webTitle', 'webSubtitle', 'webDashboardTitle', 'webDashboardDescription', 'webDashboardReminderTitle',
+        'webFormTitle', 'webHistoryTitle', 'webQueueTitle', 'webLoadingTitle', 'webReviewTitle', 'webDoneTitle',
+        'webFontFamily', 'webCornerStyle', 'webDensity', 'webContentWidth', 'webNavWidth', 'webLogoScale'].forEach(id => {
+        document.getElementById(id).addEventListener('input', previewWebSettings);
+        document.getElementById(id).addEventListener('change', previewWebSettings);
+    });
+    document.querySelectorAll('[data-page-copy-edit]').forEach(element => {
+        element.addEventListener('input', previewWebSettings);
+        element.addEventListener('change', previewWebSettings);
+    });
     ['checksheetSearch', 'checksheetSort', 'checksheetStatusFilter'].forEach(id => {
         document.getElementById(id).addEventListener('input', renderChecksheets);
         document.getElementById(id).addEventListener('change', renderChecksheets);
@@ -1119,22 +2143,31 @@ const firebaseConfig = {
         message.hidden = false;
     });
 
-    async function aktifkanAdmin() {
+    async function aktifkanAdmin(event) {
+        if (event) event.preventDefault();
         if (isAdmin) {
-            await auth.signOut();
-            alert("Logged out successfully.");
+            try {
+                await auth.signOut();
+            } catch (error) {
+                alert(`Logout failed: ${error.message}`);
+            }
             return;
         }
-        const email = prompt("Enter the owner/admin email:");
-        if (!email) return;
-        const password = prompt("Enter the password:");
-        if (!password) return;
-
+        const emailInput = document.getElementById('adminEmail');
+        const passwordInput = document.getElementById('adminPassword');
+        const errorMessage = document.getElementById('adminLoginError');
+        const submitButton = document.getElementById('adminLoginSubmit');
+        errorMessage.hidden = true;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Signing in...';
         try {
-            await auth.signInWithEmailAndPassword(email.trim(), password);
-            alert("Admin login successful!");
+            await auth.signInWithEmailAndPassword(emailInput.value.trim(), passwordInput.value);
         } catch (error) {
-            alert("Login failed: " + error.message);
+            errorMessage.textContent = `Login failed: ${error.message}`;
+            errorMessage.hidden = false;
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Login';
         }
     }
 
@@ -1290,90 +2323,23 @@ const firebaseConfig = {
         }
     }
 
-    function renderBoard() {
-        const colQ = document.getElementById('col-queue');
-        const colL = document.getElementById('col-loading');
-        const colR = document.getElementById('col-review');
-        const colD = document.getElementById('col-done');
+    function renderBoard(settings = webSettings) {
         const tableBody = document.getElementById('tableHistoryBody');
 
-        colQ.innerHTML = ''; colL.innerHTML = ''; colR.innerHTML = ''; colD.innerHTML = ''; tableBody.innerHTML = '';
+        tableBody.innerHTML = '';
         document.getElementById('totalProjectCount').innerText = `Total Projects: ${projects.length}`;
-        const statusColumns = {
-            queue: { element: colQ, countElement: document.getElementById('count-q') },
-            loading: { element: colL, countElement: document.getElementById('count-l') },
-            review: { element: colR, countElement: document.getElementById('count-r') },
-            done: { element: colD, countElement: document.getElementById('count-d') }
-        };
-        const projectsByStatus = Object.fromEntries(Object.keys(statusColumns).map(status => [
-            status,
-            projects
-                .filter(project => project.status === status)
-                .sort((a, b) => {
-                    const dateA = getSortableDate(a.waktuMasuk);
-                    const dateB = getSortableDate(b.waktuMasuk);
-                    if (dateA === null || dateB === null) {
-                        if (dateA === dateB) return Number(b.id || 0) - Number(a.id || 0);
-                        return dateA === null ? 1 : -1;
-                    }
-                    return (dateB - dateA) || Number(b.id || 0) - Number(a.id || 0);
-                })
-        ]));
-        const visibleProjectKeys = new Set();
-        Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
-            const previewLimit = isAdmin ? BOARD_PREVIEW_LIMIT : VIEWER_BOARD_PREVIEW_LIMIT;
-            const visibleProjects = boardExpanded[status] ? statusProjects : statusProjects.slice(0, previewLimit);
-            visibleProjects.forEach(project => visibleProjectKeys.add(project.fbKey));
-            statusColumns[status].countElement.innerText = statusProjects.length;
-        });
-
-        Object.values(projectsByStatus).flat().forEach(p => {
-            let kelasDivisi = 'divisi-md';
-            let labelBadge = 'badge-md';
-            if (p.divisi.includes('Rubber')) { kelasDivisi = 'divisi-rd'; labelBadge = 'badge-rd'; }
-            else if (p.divisi.includes('Casting')) { kelasDivisi = 'divisi-cd'; labelBadge = 'badge-cd'; }
-
-            let tombolAksi = '';
-            if (isAdmin) {
-                let nav = '';
-                if (p.status === 'queue') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'loading')">⏩ In Progress</button>`;
-                else if (p.status === 'loading') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'queue')">⏪ Queue</button><button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'review')">⏩ Review</button>`;
-                else if (p.status === 'review') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'loading')">⏪ Edit</button><button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'done')">⏩ Done</button>`;
-                else if (p.status === 'done') nav = `<button class="btn-action" onclick="gantiStatus('${escapeHTML(p.fbKey)}', 'review')">⏪ Review</button>`;
-
-                tombolAksi = `<div class="card-actions"><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button><button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button>${nav}</div>`;
-            }
-
-            const approvedPdfUrl = getProjectApprovedPdf(p);
-            const approvedPdfLink = approvedPdfUrl ? `<div class="card-meta"><a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">📄 Open Approved PDF</a></div>` : '';
-            const HTMLKartu = `<div class="card ${kelasDivisi}"><span class="card-badge ${labelBadge}">${escapeHTML(p.divisi)}</span><div class="card-title">${escapeHTML(p.name)}</div><div class="card-meta">📅 System Entry Time: <strong>${escapeHTML(formatDateTime(p.waktuMasuk))}</strong></div><div class="card-meta">🚨 Deadline: <strong>${escapeHTML(formatDateTime(p.deadline))}</strong></div><div class="card-meta">🧩 Type: <strong>${escapeHTML(p.requestType || '-')}</strong></div>${approvedPdfLink}${p.notes ? `<div class="card-meta">📝 Notes: <div class="notes-content">${escapeHTML(p.notes)}</div></div>` : ''}${Array.isArray(p.progressNotes) && p.progressNotes.length ? `<div class="card-meta">📌 Progress Notes: <div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></div>` : ''}${tombolAksi}</div>`;
-
-            if (visibleProjectKeys.has(p.fbKey)) {
-                statusColumns[p.status]?.element.insertAdjacentHTML('beforeend', HTMLKartu);
-            }
-
-        });
-
-        Object.entries(projectsByStatus).forEach(([status, statusProjects]) => {
-            const previewLimit = isAdmin ? BOARD_PREVIEW_LIMIT : VIEWER_BOARD_PREVIEW_LIMIT;
-            if (statusProjects.length <= previewLimit) return;
-            const buttonLabel = isAdmin
-                ? (boardExpanded[status] ? 'Show latest 5' : `Show all (${statusProjects.length})`)
-                : (boardExpanded[status] ? 'Show less' : `Show all (${statusProjects.length})`);
-            statusColumns[status].element.insertAdjacentHTML(
-                'beforeend',
-                `<button class="btn-action" style="width:100%; padding:8px; margin:4px 0 8px;" onclick="toggleBoardExpansion('${status}')">${buttonLabel}</button>`
-            );
-        });
-
         getSortedHistoryProjects().forEach((p, index) => {
             const statusClass = p.status === 'queue' ? 'q' : (p.status === 'loading' ? 'l' : (p.status === 'review' ? 'r' : 'd'));
-            const statusText = p.status === 'queue' ? '📥 Incoming' : (p.status === 'loading' ? '⏳ In Progress' : (p.status === 'review' ? '🔍 Under Review' : '✅ Done'));
+            const statusIcons = { queue: '📥', loading: '⏳', review: '🔍', done: '✅' };
+            const statusText = `${statusIcons[p.status] || ''} ${getStatusLabel(p.status, settings)}`.trim();
             const badgeStatus = `<span class="status-pill status-${statusClass}">${statusText}</span>`;
             const approvedPdfUrl = getProjectApprovedPdf(p);
-            const approvedPdfLink = approvedPdfUrl ? `<a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">Open PDF</a>` : '-';
-            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${approvedPdfLink}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">✏️ Edit Details</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">🗑️ Delete</button></td>` : ''}</tr>`;
+            const approvedPdfLink = approvedPdfUrl ? `<a href="${escapeHTML(approvedPdfUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(getPageCopy('masterPdfLink', settings))}</a>` : '-';
+            tableBody.innerHTML += `<tr><td><strong>${index + 1}</strong></td><td style="font-weight:600; color:#2d3748;">${escapeHTML(p.name)}</td><td>${approvedPdfLink}</td><td>${escapeHTML(p.divisi)}</td><td>${escapeHTML(formatDateTime(p.waktuMasuk))}</td><td style="color:#e53e3e; font-weight:500;">${escapeHTML(formatDateTime(p.deadline))}</td><td>${escapeHTML(p.requestType || '-')}</td><td><div class="notes-content">${escapeHTML(p.notes || '-')}</div></td><td><div class="notes-content">${renderProgressNotes(p.progressNotes)}</div></td><td>${badgeStatus}</td>${isAdmin ? `<td><button class="btn-action" onclick="editProject('${escapeHTML(p.fbKey)}')">${escapeHTML(getPageCopy('masterEditButton', settings))}</button> <button class="btn-action" style="background:#fed7d7; color:#c53030;" onclick="hapusProject('${escapeHTML(p.fbKey)}')">${escapeHTML(getPageCopy('masterDeleteButton', settings))}</button></td>` : ''}</tr>`;
         });
+        if (!tableBody.rows.length) {
+            tableBody.innerHTML = `<tr><td class="masterlog-empty" colspan="11">${escapeHTML(getPageCopy('masterNoResults', settings))}</td></tr>`;
+        }
 
         const historyTableContainer = document.querySelector('#tabelRiwayatUtama').parentElement;
         const historyRows = Array.from(tableBody.rows);
@@ -1384,6 +2350,7 @@ const firebaseConfig = {
         } else {
             historyTableContainer.style.maxHeight = '';
         }
+        renderDashboard(settings);
     }
 </script>
 </body>
