@@ -343,6 +343,7 @@
         .login-dialog-actions .btn { width: auto; margin: 0; }
         .pdf-viewer-dialog { width: min(1100px, calc(100% - 32px)); height: min(88vh, 850px); max-height: 90vh; padding: 0; overflow: hidden; }
         .pdf-viewer-shell { display: flex; flex-direction: column; height: 100%; min-height: min(70vh, 560px); }
+        .pdf-viewer-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .pdf-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: var(--card-bg); }
         .pdf-viewer-header h2 { min-width: 0; margin: 0; color: var(--blue-900); font-size: 16px; overflow-wrap: anywhere; }
         .pdf-viewer-header button { flex: 0 0 auto; }
@@ -959,7 +960,10 @@
                 <div class="pdf-viewer-shell">
                     <div class="pdf-viewer-header">
                         <h2 id="pdfViewerTitle">PDF Viewer</h2>
-                        <button type="button" class="btn btn-action" onclick="tutupPdfViewer()">Close</button>
+                        <div class="pdf-viewer-actions">
+                            <a id="pdfViewerDownload" class="btn btn-admin" href="#" target="_blank" rel="noopener noreferrer" download>Download PDF</a>
+                            <button type="button" class="btn btn-action" onclick="tutupPdfViewer()">Close</button>
+                        </div>
                     </div>
                     <p class="pdf-viewer-hint">PDF yang diunggah ke Firebase Storage dapat dipreview tanpa akun. Link Google Drive tetap mengikuti izin akses dari Google Drive.</p>
                     <iframe id="pdfViewerFrame" class="pdf-viewer-frame" title="PDF preview" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay"></iframe>
@@ -991,6 +995,8 @@
                     <dialog id="checksheetEditorDialog">
                 <form id="checksheetEditorForm">
                     <h2 id="checksheetEditorTitle" style="margin-top:0; color:#2b6cb0;">Add Design Checksheet</h2>
+                    <div id="checksheetEditorError" class="checksheet-error" role="alert" hidden></div>
+                    <div id="checksheetSaveProgress" role="status" aria-live="polite" hidden style="padding:10px 12px; margin-bottom:12px; border-radius:6px; background:#ebf8ff; color:#2b6cb0;"></div>
                     <div class="form-grid">
                         <div><label for="checksheetTitle">Checksheet title *</label><input id="checksheetTitle" required maxlength="160"></div>
                         <div><label for="checksheetDocumentCode">Document number / code</label><input id="checksheetDocumentCode" maxlength="80" placeholder="e.g. CD-ENG-001"></div>
@@ -1192,15 +1198,42 @@ const firebaseConfig = {
         }
     }
 
-    async function uploadPdfToStorage(file, folder) {
-        if (!isAdmin || !auth.currentUser) throw new Error('Please sign in as an admin before uploading a PDF.');
-        if (!file || !file.name.toLowerCase().endsWith('.pdf') || (file.type && file.type !== 'application/pdf')) {
-            throw new Error('Select a valid PDF file.');
+    async function uploadPdfToStorage(file, folder, onProgress = null) {
+        if (!isAdmin || !auth.currentUser) {
+            throw new Error('Please sign in as an admin before uploading a PDF.');
         }
-        const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'document.pdf';
+
+        // Some browsers/Windows configurations report valid PDF files as
+        // application/octet-stream or leave file.type empty. Accept the file
+        // when either its extension or its MIME type identifies it as a PDF.
+        const hasPdfExtension = Boolean(file?.name && file.name.toLowerCase().endsWith('.pdf'));
+        const hasPdfMimeType = file?.type === 'application/pdf';
+        if (!file || (!hasPdfExtension && !hasPdfMimeType)) {
+            throw new Error('Select a valid PDF file (.pdf).');
+        }
+
+        const originalName = file.name || 'document.pdf';
+        const safeName = originalName.normalize('NFKD')
+            .replace(/[^a-zA-Z0-9._-]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 100) || 'document.pdf';
         const storagePath = `design-load-pdfs/${folder}/${Date.now()}-${safeName}`;
-        const uploaded = await pdfStorageRef.child(storagePath).put(file, { contentType: 'application/pdf' });
-        return uploaded.ref.getDownloadURL();
+        const uploadTask = pdfStorageRef.child(storagePath).put(file, { contentType: 'application/pdf' });
+
+        // Observe upload progress and propagate Firebase errors to the form.
+        // This makes a stalled upload distinguishable from a completed upload.
+        await new Promise((resolve, reject) => {
+            uploadTask.on('state_changed', snapshot => {
+                if (typeof onProgress === 'function') {
+                    const total = snapshot.totalBytes || file.size || 0;
+                    const sent = snapshot.bytesTransferred || 0;
+                    const percent = total > 0 ? Math.round((sent / total) * 100) : 0;
+                    onProgress({ percent, sent, total, state: snapshot.state });
+                }
+            }, reject, resolve);
+        });
+
+        return await uploadTask.snapshot.ref.getDownloadURL();
     }
 
     function getPdfPreviewUrl(value) {
@@ -1214,11 +1247,37 @@ const firebaseConfig = {
         return safeUrl;
     }
 
+    function getPdfDownloadUrl(value) {
+        const safeUrl = safeHttpsUrl(value);
+        if (!safeUrl) return '';
+        try {
+            const url = new URL(safeUrl);
+            if (url.hostname === 'drive.google.com' || url.hostname.endsWith('.drive.google.com')) {
+                const fileId = url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get('id');
+                if (fileId) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+            }
+            // Ask Firebase Storage / Google Cloud Storage to return the PDF as an attachment.
+            if (url.hostname === 'firebasestorage.googleapis.com' && url.pathname.includes('/o/')) {
+                url.searchParams.set('response-content-disposition', 'attachment');
+                return url.href;
+            }
+            return safeUrl;
+        } catch {
+            return '';
+        }
+    }
+
     function openPdfViewer(value, title) {
         const previewUrl = getPdfPreviewUrl(value);
-        if (!previewUrl) return;
+        const downloadUrl = getPdfDownloadUrl(value);
+        if (!previewUrl || !downloadUrl) return;
         const dialog = document.getElementById('pdfViewerDialog');
-        document.getElementById('pdfViewerTitle').textContent = title || 'PDF Viewer';
+        const fileTitle = title || 'PDF';
+        const downloadLink = document.getElementById('pdfViewerDownload');
+        document.getElementById('pdfViewerTitle').textContent = fileTitle;
+        downloadLink.href = downloadUrl;
+        downloadLink.setAttribute('download', fileTitle.toLowerCase().endsWith('.pdf') ? fileTitle : `${fileTitle}.pdf`);
+        downloadLink.setAttribute('aria-label', `Download ${fileTitle}`);
         document.getElementById('pdfViewerFrame').src = previewUrl;
         if (!dialog.open) dialog.showModal();
     }
@@ -1226,6 +1285,7 @@ const firebaseConfig = {
     function tutupPdfViewer() {
         const dialog = document.getElementById('pdfViewerDialog');
         document.getElementById('pdfViewerFrame').src = '';
+        document.getElementById('pdfViewerDownload').removeAttribute('href');
         if (dialog.open) dialog.close();
     }
 
@@ -2090,63 +2150,104 @@ const firebaseConfig = {
 
     async function saveChecksheet(event) {
         event.preventDefault();
-        if (!isAdmin) return;
+
+        const editorError = document.getElementById('checksheetEditorError');
+        const progressMessage = document.getElementById('checksheetSaveProgress');
+        const submitButton = document.querySelector('#checksheetEditorForm button[type="submit"]');
+
+        editorError.hidden = true;
+        editorError.textContent = '';
+        progressMessage.hidden = true;
+        progressMessage.textContent = '';
+
+        if (!isAdmin || !auth.currentUser) {
+            editorError.textContent = 'Please sign in as an admin before saving a checksheet.';
+            editorError.hidden = false;
+            return;
+        }
+
         const title = document.getElementById('checksheetTitle').value.trim();
         const rawUrl = document.getElementById('checksheetFileUrl').value.trim();
         const pdfFile = document.getElementById('checksheetFileUpload').files[0];
         let fileUrl = rawUrl ? safeHttpsUrl(rawUrl) : '';
         const status = document.getElementById('checksheetStatus').value;
-        if (!title) return alert('Checksheet title is required.');
-        if (!pdfFile && rawUrl && !fileUrl) return alert('PDF link must be a valid HTTPS URL.');
-        const submitButton = document.querySelector('#checksheetEditorForm button[type="submit"]');
-        if (pdfFile) {
-            submitButton.disabled = true;
-            try {
-                fileUrl = await uploadPdfToStorage(pdfFile, 'checksheets');
-                document.getElementById('checksheetFileUrl').value = fileUrl;
-            } catch (error) {
-                console.error('Unable to upload checksheet PDF', error);
-                const message = document.getElementById('checksheetError');
-                message.textContent = `PDF upload failed: ${error.message}. Check Firebase Storage rules and try again.`;
-                message.hidden = false;
-                submitButton.disabled = false;
-                return;
-            }
-        }
-        if (status === 'published' && !fileUrl) {
-            alert('A published checksheet must have a PDF link or uploaded PDF.');
-            submitButton.disabled = false;
+
+        if (!title) {
+            editorError.textContent = 'Checksheet title is required.';
+            editorError.hidden = false;
+            document.getElementById('checksheetTitle').focus();
             return;
         }
-        const old = checksheets.find(item => item.fbKey === editingChecksheetKey);
-        const payload = {
-            title,
-            documentCode: document.getElementById('checksheetDocumentCode').value.trim(),
-            revision: document.getElementById('checksheetRevision').value.trim(),
-            owner: document.getElementById('checksheetOwner').value.trim(),
-            effectiveDate: document.getElementById('checksheetEffectiveDate').value,
-            reviewDate: document.getElementById('checksheetReviewDate').value,
-            status,
-            fileName: document.getElementById('checksheetFileName').value.trim() || pdfFile?.name || 'Checksheet PDF',
-            fileUrl,
-            description: document.getElementById('checksheetDescription').value.trim(),
-            keywords: document.getElementById('checksheetKeywords').value.split(',').map(value => value.trim()).filter(Boolean),
-            createdAt: old?.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+        if (!pdfFile && rawUrl && !fileUrl) {
+            editorError.textContent = 'PDF link must be a valid HTTPS URL.';
+            editorError.hidden = false;
+            document.getElementById('checksheetFileUrl').focus();
+            return;
+        }
+
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+
         try {
-            if (editingChecksheetKey) await checksheetsRef.child(editingChecksheetKey).update(payload);
-            else await checksheetsRef.push(payload);
+            if (pdfFile) {
+                submitButton.textContent = 'Uploading PDF…';
+                progressMessage.textContent = 'Uploading PDF to Firebase Storage…';
+                progressMessage.hidden = false;
+                fileUrl = await uploadPdfToStorage(pdfFile, 'checksheets', upload => {
+                    const sentMb = (upload.sent / (1024 * 1024)).toFixed(2);
+                    const totalMb = (upload.total / (1024 * 1024)).toFixed(2);
+                    if (upload.state === 'paused') {
+                        progressMessage.textContent = `Upload paused at ${upload.percent}% (${sentMb} of ${totalMb} MB). Check your connection and resume by saving again.`;
+                    } else {
+                        progressMessage.textContent = `Uploading PDF to Firebase Storage… ${upload.percent}% (${sentMb} of ${totalMb} MB)`;
+                    }
+                });
+                document.getElementById('checksheetFileUrl').value = fileUrl;
+                progressMessage.textContent = 'PDF uploaded. Saving checksheet details…';
+            } else {
+                submitButton.textContent = 'Saving…';
+                progressMessage.textContent = 'Saving checksheet details…';
+                progressMessage.hidden = false;
+            }
+
+            if (status === 'published' && !fileUrl) {
+                throw new Error('A published checksheet must have a PDF link or uploaded PDF.');
+            }
+
+            const old = checksheets.find(item => item.fbKey === editingChecksheetKey);
+            const payload = {
+                title,
+                documentCode: document.getElementById('checksheetDocumentCode').value.trim(),
+                revision: document.getElementById('checksheetRevision').value.trim(),
+                owner: document.getElementById('checksheetOwner').value.trim(),
+                effectiveDate: document.getElementById('checksheetEffectiveDate').value,
+                reviewDate: document.getElementById('checksheetReviewDate').value,
+                status,
+                fileName: document.getElementById('checksheetFileName').value.trim() || pdfFile?.name || 'Checksheet PDF',
+                fileUrl,
+                description: document.getElementById('checksheetDescription').value.trim(),
+                keywords: document.getElementById('checksheetKeywords').value.split(',').map(value => value.trim()).filter(Boolean),
+                createdAt: old?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (editingChecksheetKey) {
+                await checksheetsRef.child(editingChecksheetKey).update(payload);
+            } else {
+                await checksheetsRef.push(payload);
+            }
+
             document.getElementById('checksheetEditorDialog').close();
             document.getElementById('checksheetFileUpload').value = '';
             document.getElementById('checksheetError').hidden = true;
         } catch (error) {
-            console.error('Unable to save checksheet', error);
-            const message = document.getElementById('checksheetError');
-            message.textContent = `Checksheet could not be saved: ${error.message}`;
-            message.hidden = false;
+            console.error('Unable to save checksheet or upload its PDF', error);
+            editorError.textContent = `Save failed: ${error?.message || 'Unknown error'}. Check Firebase Storage/Database rules and your connection, then try again.`;
+            editorError.hidden = false;
+            progressMessage.hidden = true;
         } finally {
             submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
         }
     }
 
